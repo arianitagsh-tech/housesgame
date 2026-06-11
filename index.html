@@ -188,22 +188,22 @@
       min-height: 1.5em;
     }
 
-    /* ── SCREEN 2: Planet Map ── */
+    /* ── SCREEN 2: Planet Orbit Map ── */
     .map-header {
       text-align: center;
-      margin-bottom: 2.5rem;
+      margin-bottom: 1.5rem;
     }
 
     .map-header h1 {
-      font-size: 2.4rem;
+      font-size: 2.2rem;
       font-weight: 800;
       letter-spacing: -0.01em;
+      margin-bottom: 0.3rem;
     }
 
     .map-header .subtitle {
       color: var(--text-dim);
-      font-size: 1.1rem;
-      margin-top: 0.5rem;
+      font-size: 1rem;
     }
 
     .player-badge {
@@ -214,59 +214,83 @@
       border-radius: 50px;
       font-weight: 700;
       font-size: 0.95rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.8rem;
+    }
+    .orbit-scene {
+      position: relative;
+      width: 600px;
+      height: 600px;
+      margin: 0 auto;
     }
 
-    .planet-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 3rem 4rem;
-      max-width: 1100px;
-      width: 100%;
-      margin-top: 1rem;
+    .orbit-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 70px; height: 70px;
+      margin: -35px 0 0 -35px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff9c4, #ffb300, #e65100);
+      box-shadow: 0 0 60px rgba(255, 179, 0, 0.7), 0 0 120px rgba(255, 152, 0, 0.3);
+      z-index: 10;
+      animation: sunPulse 2s ease-in-out infinite;
     }
 
-    .planet {
+    @keyframes sunPulse {
+      0%, 100% { box-shadow: 0 0 60px rgba(255, 179, 0, 0.7), 0 0 120px rgba(255, 152, 0, 0.3); }
+      50%      { box-shadow: 0 0 90px rgba(255, 179, 0, 0.9), 0 0 160px rgba(255, 152, 0, 0.5); }
+    }
+
+    .orbit-track {
+      position: absolute;
+      top: 50%; left: 50%;
+      border-radius: 50%;
+      border: 1px dashed;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    .orbit-item {
+      position: absolute;
+      top: 50%; left: 50%;
+      /* Planet sits at radius distance from center */
+      transform-origin: 0 0;
+    }
+
+    .planet-wrapper {
+      position: absolute;
+      /* Offset so planet is at orbit edge */
       display: flex;
       flex-direction: column;
       align-items: center;
       cursor: pointer;
-      transition: transform 0.3s ease;
+      transition: filter 0.2s;
+      /* Counter-rotate name to keep it upright */
     }
 
-    .planet:hover {
-      transform: scale(1.08);
+    .planet-wrapper:hover {
+      filter: brightness(1.3);
     }
 
-    .planet-sphere {
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      position: relative;
-      box-shadow: 0 0 60px var(--glow-color), 0 0 120px var(--glow-color);
-      transition: box-shadow 0.3s ease;
+    .planet-wrapper .planet-sphere {
+      width: 80px;
+      height: 80px;
     }
 
-    .planet:hover .planet-sphere {
-      box-shadow: 0 0 80px var(--glow-color), 0 0 160px var(--glow-color);
-    }
-
-    .planet-name {
-      margin-top: 1rem;
-      font-size: 1.15rem;
+    .planet-wrapper .planet-name {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
       font-weight: 700;
-      color: var(--planet-color);
+      letter-spacing: 0.06em;
+      white-space: nowrap;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      text-shadow: 0 0 10px var(--planet-color);
     }
 
-    .planet-label {
-      color: var(--text-dim);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-top: 0.2rem;
+    .planet-wrapper .planet-ring {
+      width: 100px;
+      height: 28px;
+      border: 2px solid;
+      opacity: 0.25;
     }
 
     /* Planet gradients per color */
@@ -376,13 +400,13 @@
     <div class="map-header">
       <div class="player-badge" id="playerBadge"></div>
       <h1>Select a Planet to Invade</h1>
-      <div class="subtitle">Each planet is ruled by a rival character</div>
+      <div class="subtitle">Click an orbiting planet to attack</div>
     </div>
 
-    <div class="planet-grid" id="planetGrid"></div>
+    <div class="orbit-scene" id="orbitScene"></div>
 
     <button class="map-back-btn" id="btnBack">← Back to Character Select</button>
-    <p class="footer" style="margin-top:2rem">&copy; House's Game</p>
+    <p class="footer" style="margin-top:1rem">&copy; House's Game</p>
   </div>
 
   <script>
@@ -405,7 +429,7 @@
       const btnStart     = document.getElementById('btnStart');
       const btnReset     = document.getElementById('btnReset');
       const selectedInfo = document.getElementById('selectedInfo');
-      const planetGrid   = document.getElementById('planetGrid');
+      const orbitScene   = document.getElementById('orbitScene');
       const playerBadge  = document.getElementById('playerBadge');
       const btnBack      = document.getElementById('btnBack');
 
@@ -486,9 +510,14 @@
         screenMap.classList.toggle('active', name === 'map');
       }
 
-      // ── Build planet map ──
+      // ── Orbit animation state ──
+      let orbitAnimId = null;
+
+      // ── Build orbit map ──
       function buildMap(playerCh) {
-        planetGrid.innerHTML = '';
+        // Stop any running animation
+        if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
+        orbitScene.innerHTML = '';
 
         // Player badge
         playerBadge.textContent = '⚔ You: ' + playerCh.name;
@@ -496,26 +525,51 @@
         playerBadge.style.color = playerCh.color;
         playerBadge.style.border = '1px solid ' + playerCh.color + '44';
 
-        // Enemy planets (all except chosen)
-        const enemies = characters.filter(c => c.id !== playerCh.id);
+        // Central sun
+        const sun = document.createElement('div');
+        sun.className = 'orbit-center';
+        orbitScene.appendChild(sun);
 
-        enemies.forEach(enemy => {
-          const planet = document.createElement('div');
-          planet.className = 'planet';
+        // Enemy planets
+        const enemies = characters.filter(c => c.id !== playerCh.id);
+        const radii = [220, 170, 120]; // px from center
+        const speeds = [0.003, 0.005, 0.007]; // radians per frame
+        const sceneW = 600, sceneH = 600;
+
+        // Orbit track rings
+        radii.forEach(r => {
+          const track = document.createElement('div');
+          track.className = 'orbit-track';
+          const d = r * 2;
+          track.style.width  = d + 'px';
+          track.style.height = d + 'px';
+          track.style.marginLeft = -r + 'px';
+          track.style.marginTop  = -r + 'px';
+          track.style.borderColor = playerCh.color + '44';
+          orbitScene.appendChild(track);
+        });
+
+        const planetData = enemies.map((enemy, i) => {
+          // Orbit item (will rotate)
+          const item = document.createElement('div');
+          item.className = 'orbit-item';
+
+          // Planet wrapper (counter-rotates to keep name upright, sits at orbit edge)
+          const wrapper = document.createElement('div');
+          wrapper.className = 'planet-wrapper';
+          wrapper.style.left = (radii[i] - 40) + 'px'; // offset to orbit edge minus half planet
+          wrapper.style.top  = '-40px';
 
           const sphere = document.createElement('div');
           sphere.className = 'planet-sphere planet-' + enemy.colorName;
           sphere.style.setProperty('--glow-color', enemy.color + '88');
           sphere.style.setProperty('--planet-color', enemy.color);
+          sphere.style.boxShadow = '0 0 30px ' + enemy.color + '88, 0 0 60px ' + enemy.color + '44';
 
-          // Planet ring
-          const ringSize = 220 + Math.random() * 40;
           const ring = document.createElement('div');
           ring.className = 'planet-ring';
-          ring.style.width  = ringSize + 'px';
-          ring.style.height = ringSize * 0.35 + 'px';
-          ring.style.setProperty('--ring-color', enemy.color);
           ring.style.borderColor = enemy.color;
+          ring.style.setProperty('--ring-color', enemy.color);
           sphere.appendChild(ring);
 
           const name = document.createElement('div');
@@ -523,21 +577,38 @@
           name.style.setProperty('--planet-color', enemy.color);
           name.textContent = enemy.name;
 
-          const label = document.createElement('div');
-          label.className = 'planet-label';
-          label.textContent = 'Planet';
+          wrapper.appendChild(sphere);
+          wrapper.appendChild(name);
+          item.appendChild(wrapper);
+          orbitScene.appendChild(item);
 
-          planet.appendChild(sphere);
-          planet.appendChild(name);
-          planet.appendChild(label);
-
-          planet.addEventListener('click', () => {
-            // Placeholder for planet selection
+          // Click handler on wrapper
+          wrapper.addEventListener('click', (e) => {
+            e.stopPropagation();
             alert('Invading ' + enemy.name + "'s planet!\n\nPlanet gameplay coming soon...");
           });
 
-          planetGrid.appendChild(planet);
+          return { item, wrapper, radius: radii[i], speed: speeds[i], angle: (i * Math.PI * 2) / 3, enemy };
         });
+
+        // Animation loop
+        let lastTime = 0;
+        function animate(timestamp) {
+          if (!lastTime) lastTime = timestamp;
+          const dt = Math.min((timestamp - lastTime) / 1000, 0.1); // cap dt
+          lastTime = timestamp;
+
+          planetData.forEach(p => {
+            p.angle += p.speed * (dt * 60); // normalize speed
+            const deg = p.angle * (180 / Math.PI);
+            p.item.style.transform = 'rotate(' + deg + 'deg)';
+            // Counter-rotate wrapper to keep text upright
+            p.wrapper.style.transform = 'rotate(' + (-deg) + 'deg)';
+          });
+
+          orbitAnimId = requestAnimationFrame(animate);
+        }
+        orbitAnimId = requestAnimationFrame(animate);
       }
 
       // ── Start Game → Show map ──
