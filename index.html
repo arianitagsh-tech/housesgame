@@ -272,8 +272,13 @@
     }
 
     .planet-wrapper .planet-sphere {
-      width: 80px;
-      height: 80px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 30px var(--glow-color), 0 0 60px var(--glow-color);
+      transition: box-shadow 0.3s;
     }
 
     .planet-wrapper .planet-name {
@@ -286,36 +291,107 @@
       text-shadow: 0 0 10px var(--planet-color);
     }
 
-    .planet-wrapper .planet-ring {
-      width: 100px;
-      height: 28px;
-      border: 2px solid;
-      opacity: 0.25;
+    .planet-wrapper:hover .planet-sphere {
+      box-shadow: 0 0 50px var(--glow-color), 0 0 90px var(--glow-color);
     }
 
-    /* Planet gradients per color */
+    /* ── Atmospheric glow ring ── */
+    .planet-atmosphere {
+      position: absolute;
+      top: -6px; left: -6px;
+      right: -6px; bottom: -6px;
+      border-radius: 50%;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    /* ── Surface band for gas giants ── */
+    .planet-band {
+      position: absolute;
+      left: -10%;
+      right: -10%;
+      height: 18%;
+      border-radius: 50%;
+      opacity: 0.3;
+    }
+
+    .planet-band.b1 { top: 12%; }
+    .planet-band.b2 { top: 30%; }
+    .planet-band.b3 { top: 48%; }
+    .planet-band.b4 { top: 66%; }
+
+    /* ── Specular highlight ── */
+    .planet-specular {
+      position: absolute;
+      top: 12%; left: 18%;
+      width: 28%; height: 28%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(255,255,255,0.5) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── Crater (for rocky planets) ── */
+    .planet-crater {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .planet-crater::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      right: 2px; bottom: 2px;
+      border-radius: 50%;
+    }
+
+    /* ── RED: Rocky / Mars-like planet ── */
     .planet-red {
-      background: radial-gradient(circle at 35% 35%, #ff9999, #cc0000 50%, #660000);
+      background: radial-gradient(circle at 35% 30%, #ff9999, #e04040 35%, #991111 70%, #4a0000);
     }
-    .planet-purple {
-      background: radial-gradient(circle at 35% 35%, #c99dff, #7700cc 50%, #3b0066);
-    }
-    .planet-green {
-      background: radial-gradient(circle at 35% 35%, #99ffaa, #00cc22 50%, #006611);
-    }
-    .planet-blue {
-      background: radial-gradient(circle at 35% 35%, #99bbff, #0055cc 50%, #002266);
-    }
+    .planet-red .planet-atmosphere { box-shadow: inset 0 0 20px rgba(255,100,80,0.6); }
+    .planet-red .planet-crater.c1 { top: 55%; left: 60%; width: 22%; height: 22%; background: rgba(120,10,10,0.35); box-shadow: inset 0 1px 1px rgba(255,150,150,0.3); }
+    .planet-red .planet-crater.c2 { top: 20%; left: 15%; width: 14%; height: 14%; background: rgba(100,10,10,0.3); }
+    .planet-red .planet-crater.c3 { top: 40%; left: 70%; width: 10%; height: 10%; background: rgba(150,20,20,0.25); }
 
+    /* ── PURPLE: Gas giant with bands ── */
+    .planet-purple {
+      background: radial-gradient(circle at 35% 30%, #e0c0ff, #9944dd 30%, #551199 60%, #2a0055);
+    }
+    .planet-purple .planet-atmosphere { box-shadow: inset 0 0 20px rgba(180,100,255,0.5); }
+    .planet-purple .planet-band.b1 { background: rgba(200,160,255,0.3); }
+    .planet-purple .planet-band.b2 { background: rgba(140,60,220,0.35); }
+    .planet-purple .planet-band.b3 { background: rgba(220,180,255,0.25); }
+    .planet-purple .planet-band.b4 { background: rgba(100,40,180,0.3); }
+
+    /* ── GREEN: Earth-like with clouds ── */
+    .planet-green {
+      background: radial-gradient(circle at 35% 30%, #99ffcc, #22aa55 35%, #116633 65%, #053311);
+    }
+    .planet-green .planet-atmosphere { box-shadow: inset 0 0 22px rgba(100,255,180,0.5); }
+    .planet-green .planet-band.b1 { background: rgba(180,255,220,0.3); width: 22%; height: 12%; top: 20%; left: -5%; }
+    .planet-green .planet-band.b2 { background: rgba(140,240,200,0.25); width: 35%; height: 10%; top: 42%; left: 8%; }
+    .planet-green .planet-band.b3 { background: rgba(160,255,210,0.2); width: 18%; height: 8%; top: 62%; left: 25%; }
+
+    /* ── BLUE: Ice giant with deep atmosphere ── */
+    .planet-blue {
+      background: radial-gradient(circle at 35% 30%, #aaddff, #3377cc 35%, #113388 65%, #051144);
+    }
+    .planet-blue .planet-atmosphere { box-shadow: inset 0 0 22px rgba(120,180,255,0.55); }
+    .planet-blue .planet-band.b1 { background: rgba(150,210,255,0.35); }
+    .planet-blue .planet-band.b2 { background: rgba(60,120,220,0.3); }
+    .planet-blue .planet-band.b3 { background: rgba(180,220,255,0.25); }
+
+    /* ── Planet ring (Saturn-style) ── */
     .planet-ring {
       position: absolute;
       border-radius: 50%;
       border: 3px solid;
-      border-color: var(--ring-color);
       opacity: 0.3;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotateX(75deg);
+      pointer-events: none;
     }
 
     .map-back-btn {
@@ -557,19 +633,62 @@
           // Planet wrapper (counter-rotates to keep name upright, sits at orbit edge)
           const wrapper = document.createElement('div');
           wrapper.className = 'planet-wrapper';
-          wrapper.style.left = (radii[i] - 40) + 'px'; // offset to orbit edge minus half planet
-          wrapper.style.top  = '-40px';
+          const halfPlanet = 45;
+          wrapper.style.left = (radii[i] - halfPlanet) + 'px';
+          wrapper.style.top  = '-' + halfPlanet + 'px';
 
           const sphere = document.createElement('div');
           sphere.className = 'planet-sphere planet-' + enemy.colorName;
-          sphere.style.setProperty('--glow-color', enemy.color + '88');
+          sphere.style.setProperty('--glow-color', enemy.color + '66');
           sphere.style.setProperty('--planet-color', enemy.color);
-          sphere.style.boxShadow = '0 0 30px ' + enemy.color + '88, 0 0 60px ' + enemy.color + '44';
 
+          // Atmosphere glow
+          const atmos = document.createElement('div');
+          atmos.className = 'planet-atmosphere';
+          sphere.appendChild(atmos);
+
+          // Specular highlight
+          const spec = document.createElement('div');
+          spec.className = 'planet-specular';
+          sphere.appendChild(spec);
+
+          // Surface details by color
+          if (enemy.colorName === 'red') {
+            // Rocky planet with craters
+            for (let ci = 1; ci <= 3; ci++) {
+              const crater = document.createElement('div');
+              crater.className = 'planet-crater c' + ci;
+              sphere.appendChild(crater);
+            }
+          } else if (enemy.colorName === 'purple') {
+            // Gas giant with bands
+            for (let bi = 1; bi <= 4; bi++) {
+              const band = document.createElement('div');
+              band.className = 'planet-band b' + bi;
+              sphere.appendChild(band);
+            }
+          } else if (enemy.colorName === 'green') {
+            // Earth-like with cloud patches
+            for (let bi = 1; bi <= 3; bi++) {
+              const band = document.createElement('div');
+              band.className = 'planet-band b' + bi;
+              sphere.appendChild(band);
+            }
+          } else if (enemy.colorName === 'blue') {
+            // Ice giant with bands
+            for (let bi = 1; bi <= 3; bi++) {
+              const band = document.createElement('div');
+              band.className = 'planet-band b' + bi;
+              sphere.appendChild(band);
+            }
+          }
+
+          // Saturn-style ring
           const ring = document.createElement('div');
           ring.className = 'planet-ring';
           ring.style.borderColor = enemy.color;
-          ring.style.setProperty('--ring-color', enemy.color);
+          ring.style.width  = '130px';
+          ring.style.height = '32px';
           sphere.appendChild(ring);
 
           const name = document.createElement('div');
