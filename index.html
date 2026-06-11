@@ -505,49 +505,34 @@
   //  MAZE GAME
   // ═══════════════════════════════════════════
   let mazeState = null;
+  let mazeImages = {}; // preloaded images
 
   function generateMaze(cols, rows) {
-    // Grid: 0=path, 1=wall
     const grid = [];
     for (let r=0;r<rows;r++) { grid[r]=[]; for (let c=0;c<cols;c++) grid[r][c]=1; }
-
-    // Recursive backtracking
     const stack = [];
-    const startR = 1, startC = 1;
-    grid[startR][startC] = 0;
-    stack.push([startR, startC]);
-
+    const startR=1,startC=1;
+    grid[startR][startC]=0; stack.push([startR,startC]);
     const dirs = [[0,2],[2,0],[0,-2],[-2,0]];
-
-    while (stack.length > 0) {
-      const [cr, cc] = stack[stack.length-1];
-      const shuffled = dirs.sort(()=>Math.random()-0.5);
-      let carved = false;
-
-      for (const [dr, dc] of shuffled) {
-        const nr = cr+dr, nc = cc+dc;
-        const mr = cr+dr/2, mc = cc+dc/2;
-        if (nr>0 && nr<rows-1 && nc>0 && nc<cols-1 && grid[nr][nc]===1) {
-          grid[nr][nc]=0; grid[mr][mc]=0;
-          stack.push([nr, nc]);
-          carved=true; break;
+    while (stack.length) {
+      const [cr,cc]=stack[stack.length-1];
+      const shuffled=dirs.sort(()=>Math.random()-0.5);
+      let carved=false;
+      for (const [dr,dc] of shuffled) {
+        const nr=cr+dr,nc=cc+dc,mr=cr+dr/2,mc=cc+dc/2;
+        if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&grid[nr][nc]===1) {
+          grid[nr][nc]=0;grid[mr][mc]=0;stack.push([nr,nc]);carved=true;break;
         }
       }
       if (!carved) stack.pop();
     }
-
-    // Ensure start (1,1) and end (cols-2, rows-2) are paths
-    grid[1][1]=0; grid[1][2]=0;
-    grid[rows-2][cols-2]=0; grid[rows-3][cols-2]=0;
-
+    grid[1][1]=0;grid[1][2]=0;grid[rows-2][cols-2]=0;grid[rows-3][cols-2]=0;
     return grid;
   }
 
   function findPathPositions(grid, cols, rows) {
     const positions = [];
-    for (let r=1;r<rows-1;r++)
-      for (let c=1;c<cols-1;c++)
-        if (grid[r][c]===0) positions.push({r,c});
+    for (let r=1;r<rows-1;r++) for (let c=1;c<cols-1;c++) if (grid[r][c]===0) positions.push({r,c});
     return positions;
   }
 
@@ -555,85 +540,81 @@
     if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
     if (gameAnimId) cancelAnimationFrame(gameAnimId);
 
-    const cols = 19, rows = 13;
-    const cellSize = 38;
+    const cols = 21, rows = 15;
+    const cellSize = 42;
     const cw = cols*cellSize, ch = rows*cellSize;
     gameCanvas.width = cw; gameCanvas.height = ch;
     gameCanvas.style.width = cw+'px'; gameCanvas.style.height = ch+'px';
 
     const grid = generateMaze(cols, rows);
     const pathPositions = findPathPositions(grid, cols, rows);
-
-    // Player start at (1,1)
     let px = 1, py = 1;
-
-    // Cup at the far end
     const cupR = rows-2, cupC = cols-2;
 
-    // Enemies: pick 3 random path positions (not near start or cup)
+    // Enemies
     const enemyPositions = [];
-    const forbidden = new Set();
-    forbidden.add('1,1'); forbidden.add('1,2'); forbidden.add('2,1');
-    forbidden.add((rows-2)+','+(cols-2)); forbidden.add((rows-3)+','+(cols-2));
+    const forbidden = new Set(['1,1','1,2','2,1',(rows-2)+','+(cols-2),(rows-3)+','+(cols-2)]);
     const shuffled = pathPositions.sort(()=>Math.random()-0.5);
     for (const pos of shuffled) {
       if (enemyPositions.length>=3) break;
       const key = pos.r+','+pos.c;
       if (!forbidden.has(key)) {
-        enemyPositions.push({r:pos.r, c:pos.c, dir:Math.floor(Math.random()*4), timer:0});
+        enemyPositions.push({r:pos.r,c:pos.c,dir:Math.floor(Math.random()*4),timer:0});
         forbidden.add(key);
       }
     }
 
+    // Preload images
+    mazeImages = {};
+    mazeImages.player = new Image(); mazeImages.player.src = playerCh.src;
+    mazeImages.enemy = new Image(); mazeImages.enemy.src = enemyPlanet.src;
+    mazeImages.bg = new Image(); mazeImages.bg.src = 'assets/space-background.jpg';
+    mazeImages.loaded = false;
+    let toLoad = 3, loaded = 0;
+    [mazeImages.player, mazeImages.enemy, mazeImages.bg].forEach(img => {
+      img.onload = img.onerror = () => { loaded++; if (loaded >= toLoad) mazeImages.loaded = true; };
+    });
+
     let lives = 3;
-    let keys = {};
     let lastMove = 0;
-    const MOVE_DELAY = 120; // ms
 
     gamePlanetLabel.textContent = enemyPlanet.name + "'s Planet";
     gamePlanetLabel.style.color = enemyPlanet.color;
     updateHUD();
-
     showScreen('game');
     gameMsg.classList.remove('show');
-    gameCanvas.focus();
 
     mazeState = { grid, cols, rows, cellSize, px, py, cupR, cupC, enemyPositions,
-                  lives, keys, lastMove, playerCh, enemyPlanet };
+                  lives, lastMove, playerCh, enemyPlanet };
 
     function gameLoop(ts) {
       if (!mazeState) return;
       const s = mazeState;
       if (!s.lastMove) s.lastMove = ts;
 
-      // Move enemies every 400ms
-      const enemyInterval = 400;
-      s.enemyPositions.forEach((ep,i)=>{
+      // Move enemies
+      const enemyInterval = 380;
+      s.enemyPositions.forEach(ep => {
         ep.timer += (ts - s.lastMove);
-        while (ep.timer >= enemyInterval) {
-          ep.timer -= enemyInterval;
-          moveEnemy(ep, s.grid, s.cols, s.rows);
-        }
+        while (ep.timer >= enemyInterval) { ep.timer -= enemyInterval; moveEnemy(ep, s.grid, s.cols, s.rows); }
       });
 
-      // Check enemy collision
+      // Enemy collision
       for (const ep of s.enemyPositions) {
         if (ep.r === s.py && ep.c === s.px) {
-          s.lives--;
-          updateHUD();
+          s.lives--; updateHUD();
           if (s.lives <= 0) {
             showMessage('Game Over!', '#ff4d6a');
             setTimeout(()=>{ mazeState=null; showScreen('map'); buildMap(s.playerCh); }, 1500);
             gameAnimId=null; return;
           }
-          // Reset player position
           s.px=1; s.py=1;
           showMessage('Ouch! -1 Life', '#ff4d6a');
           setTimeout(()=>gameMsg.classList.remove('show'), 800);
         }
       }
 
-      // Check cup collection
+      // Cup collection
       if (s.px === s.cupC && s.py === s.cupR) {
         conqueredCups.push(s.enemyPlanet.id);
         localStorage.setItem(CUPS_KEY, JSON.stringify(conqueredCups));
@@ -641,11 +622,8 @@
         setTimeout(()=>{
           mazeState=null; gameAnimId=null;
           const remaining = characters.filter(c=>c.id!==s.playerCh.id && !conqueredCups.includes(c.id));
-          if (remaining.length===0) {
-            showWinScreen(s.playerCh);
-          } else {
-            showScreen('map'); buildMap(s.playerCh);
-          }
+          if (remaining.length===0) showWinScreen(s.playerCh);
+          else { showScreen('map'); buildMap(s.playerCh); }
         }, 1500);
         return;
       }
@@ -660,86 +638,170 @@
   function moveEnemy(ep, grid, cols, rows) {
     const dirs = [[0,1],[1,0],[0,-1],[-1,0]];
     const [dr, dc] = dirs[ep.dir];
-    const nr = ep.r+dr, nc = ep.c+dc;
-    if (nr>0 && nr<rows-1 && nc>0 && nc<cols-1 && grid[nr][nc]===0 && Math.random()>0.2) {
+    const nr=ep.r+dr, nc=ep.c+dc;
+    if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&grid[nr][nc]===0&&Math.random()>0.2) {
       ep.r=nr; ep.c=nc;
     } else {
-      ep.dir = Math.floor(Math.random()*4);
+      ep.dir=Math.floor(Math.random()*4);
     }
   }
 
   function drawMaze(s) {
     const ctx = gameCanvas.getContext('2d');
     const cs = s.cellSize;
-    ctx.clearRect(0,0,gameCanvas.width,gameCanvas.height);
+    const cw = s.cols*cs, ch = s.rows*cs;
+    ctx.clearRect(0,0,cw,ch);
 
-    // Draw space background
-    const bgGrad = ctx.createRadialGradient(gameCanvas.width/2,gameCanvas.height/2,0,gameCanvas.width/2,gameCanvas.height/2,gameCanvas.width);
-    bgGrad.addColorStop(0,'#0d0d2b'); bgGrad.addColorStop(1,'#050510');
-    ctx.fillStyle = bgGrad; ctx.fillRect(0,0,gameCanvas.width,gameCanvas.height);
-
-    // Stars
-    ctx.fillStyle='white';
-    for (let i=0;i<80;i++) {
-      const sx=(i*137+53)%gameCanvas.width, sy=(i*251+97)%gameCanvas.height;
-      ctx.globalAlpha=0.3+Math.sin(i+Date.now()/2000)*0.3;
-      ctx.fillRect(sx,sy,1.5,1.5);
+    // ── Floor: space background image or gradient ──
+    if (mazeImages.loaded && mazeImages.bg.complete && mazeImages.bg.naturalWidth) {
+      ctx.drawImage(mazeImages.bg, 0, 0, cw, ch);
+      // Darken slightly
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(0, 0, cw, ch);
+    } else {
+      const bgGrad = ctx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw);
+      bgGrad.addColorStop(0,'#0d0d2b'); bgGrad.addColorStop(1,'#050510');
+      ctx.fillStyle = bgGrad; ctx.fillRect(0,0,cw,ch);
+      // Stars
+      for (let i=0;i<60;i++) {
+        const sx=(i*137+53)%cw, sy=(i*251+97)%ch;
+        ctx.globalAlpha=0.2+Math.sin(i+Date.now()/2000)*0.2;
+        ctx.fillStyle='white'; ctx.fillRect(sx,sy,1.5,1.5);
+      }
+      ctx.globalAlpha=1;
     }
-    ctx.globalAlpha=1;
 
-    // Walls
+    // ── Path grid (subtle floor tiles) ──
     for (let r=0;r<s.rows;r++) {
       for (let c=0;c<s.cols;c++) {
-        if (s.grid[r][c]===1) {
-          ctx.fillStyle='#1a1a3a';
-          ctx.fillRect(c*cs,r*cs,cs,cs);
-          ctx.strokeStyle='#2a2a4a';
-          ctx.strokeRect(c*cs+0.5,r*cs+0.5,cs-1,cs-1);
+        if (s.grid[r][c]===0) {
+          ctx.fillStyle = 'rgba(255,255,255,0.03)';
+          ctx.fillRect(c*cs+1, r*cs+1, cs-2, cs-2);
         }
       }
     }
 
-    // Cup
+    // ── Walls with 3D depth ──
+    for (let r=0;r<s.rows;r++) {
+      for (let c=0;c<s.cols;c++) {
+        if (s.grid[r][c]===1) {
+          const x=c*cs, y=r*cs;
+          // Wall body
+          const wallGrad = ctx.createLinearGradient(x, y, x+cs, y+cs);
+          wallGrad.addColorStop(0, '#2a2a4a'); wallGrad.addColorStop(0.5, '#1a1a35'); wallGrad.addColorStop(1, '#0f0f25');
+          ctx.fillStyle = wallGrad;
+          ctx.fillRect(x, y, cs, cs);
+          // Top highlight
+          ctx.fillStyle = 'rgba(100,100,160,0.3)';
+          ctx.fillRect(x+1, y+1, cs-2, 3);
+          // Left highlight
+          ctx.fillStyle = 'rgba(80,80,140,0.2)';
+          ctx.fillRect(x+1, y+1, 3, cs-2);
+          // Bottom shadow
+          ctx.fillStyle = 'rgba(0,0,0,0.4)';
+          ctx.fillRect(x+1, y+cs-4, cs-2, 3);
+          // Right shadow
+          ctx.fillStyle = 'rgba(0,0,0,0.35)';
+          ctx.fillRect(x+cs-4, y+1, 3, cs-2);
+          // Border
+          ctx.strokeStyle = 'rgba(60,60,100,0.4)';
+          ctx.lineWidth = 0.5;
+          ctx.strokeRect(x+0.5, y+0.5, cs-1, cs-1);
+        }
+      }
+    }
+
+    // ── Cup ──
     const cupX = s.cupC*cs+cs/2, cupY = s.cupR*cs+cs/2;
     const cupColor = s.enemyPlanet.color;
-    // Cup glow
-    const cupGlow = ctx.createRadialGradient(cupX,cupY,5,cupX,cupY,cs);
-    cupGlow.addColorStop(0,cupColor); cupGlow.addColorStop(1,'transparent');
-    ctx.fillStyle=cupGlow; ctx.fillRect(cupX-cs,cupY-cs,cs*2,cs*2);
-    // Cup body
-    ctx.fillStyle=cupColor;
-    ctx.beginPath(); ctx.arc(cupX,cupY-4,10,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.arc(cupX,cupY-4,5,0,Math.PI*2); ctx.fill();
-    // Cup text
-    ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif';
-    ctx.textAlign='center'; ctx.fillText('CUP',cupX,cupY+18);
+    const now = Date.now()/1000;
+    // Pulsing glow
+    const pulse = 0.7 + Math.sin(now*3)*0.3;
+    const cupGlow = ctx.createRadialGradient(cupX, cupY, 4, cupX, cupY, cs*0.9);
+    cupGlow.addColorStop(0, cupColor); cupGlow.addColorStop(1, 'transparent');
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = cupGlow; ctx.fillRect(cupX-cs*0.8, cupY-cs*0.8, cs*1.6, cs*1.6);
+    ctx.globalAlpha = 1;
 
-    // Enemies
-    s.enemyPositions.forEach((ep,i)=>{
-      const ex=ep.c*cs+cs/2, ey=ep.r*cs+cs/2;
-      const enemyGlow=ctx.createRadialGradient(ex,ey,3,ex,ey,14);
-      enemyGlow.addColorStop(0,'#ff4444'); enemyGlow.addColorStop(1,'transparent');
-      ctx.fillStyle=enemyGlow; ctx.fillRect(ex-14,ey-14,28,28);
-      ctx.fillStyle='#ff3333';
-      ctx.beginPath(); ctx.arc(ex,ey,7,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#fff';
-      ctx.beginPath(); ctx.arc(ex-2,ey-2,2,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex+2,ey-2,2,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#000';
-      ctx.beginPath(); ctx.arc(ex-2,ey-1.5,1,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex+2,ey-1.5,1,0,Math.PI*2); ctx.fill();
+    // Cup base
+    ctx.fillStyle = cupColor;
+    ctx.beginPath(); ctx.moveTo(cupX-12, cupY+8); ctx.lineTo(cupX+12, cupY+8);
+    ctx.lineTo(cupX+10, cupY+12); ctx.lineTo(cupX-10, cupY+12); ctx.closePath(); ctx.fill();
+    // Cup stem
+    ctx.fillStyle = '#ccc';
+    ctx.fillRect(cupX-3, cupY-2, 6, 12);
+    // Cup bowl
+    ctx.fillStyle = cupColor;
+    ctx.beginPath(); ctx.arc(cupX, cupY-6, 10, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = cupColor;
+    ctx.fillRect(cupX-10, cupY-6, 20, 10);
+    // Cup rim highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillRect(cupX-10, cupY-6, 20, 3);
+    // Sparkle
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cupX+7, cupY-10, 2.5, 0, Math.PI*2); ctx.fill();
+
+    // ── Enemies (planet ruler's character image) ──
+    const eImg = mazeImages.enemy;
+    const eReady = mazeImages.loaded && eImg.complete && eImg.naturalWidth;
+    s.enemyPositions.forEach((ep, i) => {
+      const ex = ep.c*cs+cs/2, ey = ep.r*cs+cs/2;
+      // Red enemy glow
+      const eGlow = ctx.createRadialGradient(ex, ey, 4, ex, ey, cs*0.45);
+      eGlow.addColorStop(0, 'rgba(255,50,50,0.6)'); eGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = eGlow; ctx.fillRect(ex-cs*0.4, ey-cs*0.4, cs*0.8, cs*0.8);
+
+      // Draw character head
+      const eSize = cs*0.5;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(ex, ey, eSize, 0, Math.PI*2); ctx.clip();
+      if (eReady) {
+        ctx.drawImage(eImg, ex-eSize, ey-eSize, eSize*2, eSize*2);
+      } else {
+        ctx.fillStyle = s.enemyPlanet.color;
+        ctx.fillRect(ex-eSize, ey-eSize, eSize*2, eSize*2);
+      }
+      ctx.restore();
+      // Border ring
+      ctx.strokeStyle = '#ff3333';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(ex, ey, eSize+0.5, 0, Math.PI*2); ctx.stroke();
+      // Eyes
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath(); ctx.arc(ex-3, ey-2, 2.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex+3, ey-2, 2.5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(ex-3, ey-2, 1, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex+3, ey-2, 1, 0, Math.PI*2); ctx.fill();
     });
 
-    // Player
+    // ── Player (chosen character image) ──
     const plX = s.px*cs+cs/2, plY = s.py*cs+cs/2;
-    const plGlow=ctx.createRadialGradient(plX,plY,4,plX,plY,16);
-    plGlow.addColorStop(0,s.playerCh.color); plGlow.addColorStop(1,'transparent');
-    ctx.fillStyle=plGlow; ctx.fillRect(plX-16,plY-16,32,32);
-    ctx.fillStyle=s.playerCh.color;
-    ctx.beginPath(); ctx.arc(plX,plY,8,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.arc(plX,plY-1,3,0,Math.PI*2); ctx.fill();
+    const pImg = mazeImages.player;
+    const pReady = mazeImages.loaded && pImg.complete && pImg.naturalWidth;
+    // Player glow
+    const plGlow = ctx.createRadialGradient(plX, plY, 6, plX, plY, cs*0.5);
+    plGlow.addColorStop(0, s.playerCh.color); plGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = plGlow; ctx.fillRect(plX-cs*0.45, plY-cs*0.45, cs*0.9, cs*0.9);
+
+    // Draw character head
+    const pSize = cs*0.52;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(plX, plY, pSize, 0, Math.PI*2); ctx.clip();
+    if (pReady) {
+      ctx.drawImage(pImg, plX-pSize, plY-pSize, pSize*2, pSize*2);
+    } else {
+      ctx.fillStyle = s.playerCh.color;
+      ctx.fillRect(plX-pSize, plY-pSize, pSize*2, pSize*2);
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(plX, plY-1, 4, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+    // Player border
+    ctx.strokeStyle = s.playerCh.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(plX, plY, pSize+0.5, 0, Math.PI*2); ctx.stroke();
   }
 
   function showMessage(text, color) {
