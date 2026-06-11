@@ -296,7 +296,7 @@
 </div>
 
 <!-- ══════ Background Music ══════ -->
-<audio id="bgMusic" loop preload="auto" src="assets/galactic-velocity-rush.mp3"></audio>
+<audio id="bgMusic" loop preload="none" src="assets/galactic-velocity-rush.mp3"></audio>
 
 <script>
 (function() {
@@ -367,11 +367,9 @@
 
   // ── Music ──
   function startMusic() {
-    bgMusic.volume = 0.3;
-    bgMusic.play().catch(()=>{});
+    try { bgMusic.volume=0.3; bgMusic.play().catch(()=>{}); } catch(e) {}
   }
-  // Try to start music on first user interaction
-  document.addEventListener('click', ()=>{ bgMusic.play().catch(()=>{}); }, {once:true});
+  document.addEventListener('click', ()=>{ startMusic(); }, {once:true});
 
   // ── Build character cards ──
   characters.forEach(ch => {
