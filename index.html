@@ -651,15 +651,18 @@
     const cw = s.cols*cs, ch = s.rows*cs;
     ctx.clearRect(0,0,cw,ch);
 
-    // ── Floor: dark gradient with stars ──
+    // ── Floor: planet-colored gradient with stars ──
+    const pColor = s.enemyPlanet.color;
     const bgGrad = ctx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw);
-    bgGrad.addColorStop(0,'#0d0d2b'); bgGrad.addColorStop(1,'#050510');
+    bgGrad.addColorStop(0, pColor+'18');
+    bgGrad.addColorStop(0.5, pColor+'0a');
+    bgGrad.addColorStop(1, '#050510');
     ctx.fillStyle = bgGrad; ctx.fillRect(0,0,cw,ch);
     // Stars
     for (let i=0;i<60;i++) {
       const sx=(i*137+53)%cw, sy=(i*251+97)%ch;
-      ctx.globalAlpha=0.2+Math.sin(i+Date.now()/2000)*0.2;
-      ctx.fillStyle='white'; ctx.fillRect(sx,sy,1.5,1.5);
+      ctx.globalAlpha=0.15+Math.sin(i+Date.now()/2000)*0.15;
+      ctx.fillStyle=pColor; ctx.fillRect(sx,sy,1.5,1.5);
     }
     ctx.globalAlpha=1;
 
