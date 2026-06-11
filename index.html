@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>House's Game — Choose Your Character</title>
+  <style>
+    /* ── Theme (CSS custom properties) ── */
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #14141f;
+      --border: #2a2a3a;
+      --border-hover: #7c5cff;
+      --text: #e0e0e8;
+      --text-dim: #8888a0;
+      --accent: #7c5cff;
+      --accent-glow: rgba(124, 92, 255, 0.3);
+      --danger: #ff4d6a;
+      --radius: 16px;
+      --transition: 0.25s ease;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background-image:
+        radial-gradient(ellipse at 50% 0%, rgba(124, 92, 255, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 50% 100%, rgba(124, 92, 255, 0.04) 0%, transparent 60%);
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .header h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #c4b5fd, #7c5cff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+    }
+
+    .header p {
+      color: var(--text-dim);
+      font-size: 1.15rem;
+    }
+
+    /* ── Character Grid ── */
+    .character-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    .character-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+      position: relative;
+    }
+
+    .character-card:hover,
+    .character-card:focus-visible {
+      border-color: var(--border-hover);
+      box-shadow: 0 0 30px var(--accent-glow);
+      transform: translateY(-4px);
+      outline: none;
+    }
+
+    .character-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 40px var(--accent-glow), inset 0 0 40px rgba(124, 92, 255, 0.08);
+    }
+
+    .character-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
+
+    .character-card img {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      display: block;
+      background: #1a1a2e;
+    }
+
+    .character-label {
+      padding: 0.9rem 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text-dim);
+      transition: color var(--transition);
+    }
+
+    .character-card:hover .character-label,
+    .character-card.selected .character-label {
+      color: var(--text);
+    }
+
+    /* ── Button ── */
+    .btn {
+      margin-top: 2.5rem;
+      padding: 1rem 3rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all var(--transition);
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c5cff, #5b3fe8);
+      color: #fff;
+      box-shadow: 0 4px 24px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 36px rgba(124, 92, 255, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      margin-left: 1rem;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-dim);
+      color: var(--text);
+    }
+
+    /* ── Selected info ── */
+    .selected-info {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: var(--accent);
+      font-weight: 600;
+      min-height: 1.5em;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 3rem;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Choose Your Character</h1>
+    <p>Select one to begin the adventure</p>
+  </div>
+
+  <div class="character-grid" id="characterGrid">
+    <!-- Populated by JS -->
+  </div>
+
+  <p class="selected-info" id="selectedInfo"></p>
+
+  <div style="text-align:center">
+    <button class="btn btn-primary" id="btnStart" disabled>Start Game</button>
+    <button class="btn btn-secondary" id="btnReset">Reset</button>
+  </div>
+
+  <p class="footer">&copy; House's Game</p>
+
+  <script>
+    (function() {
+      const characters = [
+        { id: 1, name: 'Character 1', src: 'assets/character-1.jpg' },
+        { id: 2, name: 'Character 2', src: 'assets/character-2.jpg' },
+        { id: 3, name: 'Character 3', src: 'assets/character-3.jpg' },
+        { id: 4, name: 'Character 4', src: 'assets/character-4.jpg' },
+      ];
+
+      const STORAGE_KEY = 'housesgame_selected_character';
+      let selectedId = null;
+
+      const grid = document.getElementById('characterGrid');
+      const btnStart = document.getElementById('btnStart');
+      const btnReset = document.getElementById('btnReset');
+      const selectedInfo = document.getElementById('selectedInfo');
+
+      // Build cards
+      characters.forEach(ch => {
+        const card = document.createElement('div');
+        card.className = 'character-card';
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'radio');
+        card.setAttribute('aria-checked', 'false');
+        card.dataset.id = ch.id;
+
+        const img = document.createElement('img');
+        img.src = ch.src;
+        img.alt = ch.name;
+        img.loading = 'lazy';
+
+        const label = document.createElement('div');
+        label.className = 'character-label';
+        label.textContent = ch.name;
+
+        card.appendChild(img);
+        card.appendChild(label);
+
+        card.addEventListener('click', () => selectCharacter(ch.id));
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectCharacter(ch.id);
+          }
+        });
+
+        grid.appendChild(card);
+      });
+
+      function selectCharacter(id) {
+        selectedId = id;
+
+        // Update cards
+        document.querySelectorAll('.character-card').forEach(c => {
+          const isSelected = +c.dataset.id === id;
+          c.classList.toggle('selected', isSelected);
+          c.setAttribute('aria-checked', isSelected);
+        });
+
+        // Save to localStorage
+        localStorage.setItem(STORAGE_KEY, id);
+
+        // Update UI
+        const ch = characters.find(c => c.id === id);
+        selectedInfo.textContent = 'Selected: ' + ch.name;
+        btnStart.disabled = false;
+      }
+
+      function clearSelection() {
+        selectedId = null;
+        localStorage.removeItem(STORAGE_KEY);
+        document.querySelectorAll('.character-card').forEach(c => {
+          c.classList.remove('selected');
+          c.setAttribute('aria-checked', 'false');
+        });
+        selectedInfo.textContent = '';
+        btnStart.disabled = true;
+      }
+
+      // Restore previous selection
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        selectCharacter(+saved);
+      }
+
+      // Start button
+      btnStart.addEventListener('click', () => {
+        if (!selectedId) return;
+        // Game start — placeholder for now
+        alert('Starting game with ' + characters.find(c => c.id === selectedId).name + '!\n\nGame mechanics coming soon...');
+      });
+
+      // Reset button
+      btnReset.addEventListener('click', () => {
+        clearSelection();
+      });
+    })();
+  </script>
+
+</body>
+</html>
