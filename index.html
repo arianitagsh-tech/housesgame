@@ -279,7 +279,7 @@
     <canvas id="gameCanvas"></canvas>
     <div class="game-msg" id="gameMsg"></div>
   </div>
-  <div class="game-controls">Use W A S D or Arrow Keys to move • Avoid enemies • Reach the cup!</div>
+  <div class="game-controls">WASD to move • Mouse to aim • Click to shoot</div>
 </div>
 
 <!-- ══════ SCREEN 4: Win ══════ -->
@@ -479,7 +479,7 @@
       wrapper.addEventListener('click',(e)=>{
         e.stopPropagation();
         if (conqueredCups.includes(enemy.id)) return;
-        startMaze(playerCh, enemy);
+        startShooter(playerCh, enemy);
       });
 
       return {item, wrapper, radius:radii[i], speed:[0.003,0.005,0.007][i], angle:(i*Math.PI*2)/3, enemy};
@@ -502,314 +502,304 @@
   }
 
   // ═══════════════════════════════════════════
-  //  MAZE GAME
+  //  TOP-DOWN SHOOTER
   // ═══════════════════════════════════════════
-  let mazeState = null;
-  let mazeImages = {}; // preloaded images
+  let shootState = null;
+  let shootImages = {};
+  let keys = {};
+  let mouseX = 0, mouseY = 0;
 
-  function generateMaze(cols, rows) {
-    const grid = [];
-    for (let r=0;r<rows;r++) { grid[r]=[]; for (let c=0;c<cols;c++) grid[r][c]=1; }
-    const stack = [];
-    const startR=1,startC=1;
-    grid[startR][startC]=0; stack.push([startR,startC]);
-    const dirs = [[0,2],[2,0],[0,-2],[-2,0]];
-    while (stack.length) {
-      const [cr,cc]=stack[stack.length-1];
-      const shuffled=dirs.sort(()=>Math.random()-0.5);
-      let carved=false;
-      for (const [dr,dc] of shuffled) {
-        const nr=cr+dr,nc=cc+dc,mr=cr+dr/2,mc=cc+dc/2;
-        if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&grid[nr][nc]===1) {
-          grid[nr][nc]=0;grid[mr][mc]=0;stack.push([nr,nc]);carved=true;break;
-        }
-      }
-      if (!carved) stack.pop();
-    }
-    grid[1][1]=0;grid[1][2]=0;grid[rows-2][cols-2]=0;grid[rows-3][cols-2]=0;
-    return grid;
-  }
-
-  function findPathPositions(grid, cols, rows) {
-    const positions = [];
-    for (let r=1;r<rows-1;r++) for (let c=1;c<cols-1;c++) if (grid[r][c]===0) positions.push({r,c});
-    return positions;
-  }
-
-  function startMaze(playerCh, enemyPlanet) {
+  function startShooter(playerCh, enemyPlanet) {
     if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
     if (gameAnimId) cancelAnimationFrame(gameAnimId);
 
-    const cols = 17, rows = 11;
-    const cellSize = 48;
-    const cw = cols*cellSize, ch = rows*cellSize;
-    gameCanvas.width = cw; gameCanvas.height = ch;
-    gameCanvas.style.width = cw+'px'; gameCanvas.style.height = ch+'px';
-
-    const grid = generateMaze(cols, rows);
-    const pathPositions = findPathPositions(grid, cols, rows);
-    let px = 1, py = 1;
-    const cupR = rows-2, cupC = cols-2;
-
-    // Enemies
-    const enemyPositions = [];
-    const forbidden = new Set(['1,1','1,2','2,1',(rows-2)+','+(cols-2),(rows-3)+','+(cols-2)]);
-    const shuffled = pathPositions.sort(()=>Math.random()-0.5);
-    for (const pos of shuffled) {
-      if (enemyPositions.length>=2) break;
-      const key = pos.r+','+pos.c;
-      if (!forbidden.has(key)) {
-        enemyPositions.push({r:pos.r,c:pos.c,dir:Math.floor(Math.random()*4),timer:0});
-        forbidden.add(key);
-      }
-    }
+    const W = 800, H = 600;
+    gameCanvas.width = W; gameCanvas.height = H;
+    gameCanvas.style.width = W+'px'; gameCanvas.style.height = H+'px';
 
     // Preload images
-    mazeImages = {};
-    mazeImages.player = new Image(); mazeImages.player.src = playerCh.src;
-    mazeImages.enemy = new Image(); mazeImages.enemy.src = enemyPlanet.src;
-    mazeImages.loaded = false;
-    let toLoad = 2, loaded = 0;
-    [mazeImages.player, mazeImages.enemy].forEach(img => {
-      img.onload = img.onerror = () => { loaded++; if (loaded >= toLoad) mazeImages.loaded = true; };
+    shootImages = {};
+    shootImages.player = new Image(); shootImages.player.src = playerCh.src;
+    shootImages.enemy = new Image(); shootImages.enemy.src = enemyPlanet.src;
+    shootImages.loaded = false;
+    let toLoad=2, loaded=0;
+    [shootImages.player, shootImages.enemy].forEach(img=>{
+      img.onload=img.onerror=()=>{loaded++;if(loaded>=toLoad)shootImages.loaded=true;};
     });
 
-    let lives = 5;
-    let invulnUntil = 0; // timestamp until invulnerable
-    let lastMove = 0;
+    const state = {
+      playerCh, enemyPlanet,
+      px: W/2, py: H/2,  // player center
+      radius: 16, speed: 260,
+      bullets: [],
+      enemies: [],
+      particles: [],
+      wave: 1,
+      maxWaves: 3,
+      enemiesRemaining: 0,
+      waveActive: false,
+      waveDelay: 0,
+      hearts: 3,
+      invulnUntil: 0,
+      shakeTime: 0,
+      lastTime: 0,
+    };
 
     gamePlanetLabel.textContent = enemyPlanet.name + "'s Planet";
     gamePlanetLabel.style.color = enemyPlanet.color;
-    updateHUD();
     showScreen('game');
     gameMsg.classList.remove('show');
 
-    mazeState = { grid, cols, rows, cellSize, px, py, cupR, cupC, enemyPositions,
-                  lives, invulnUntil, lastMove, playerCh, enemyPlanet };
+    shootState = state;
+    spawnWave(state);
 
     function gameLoop(ts) {
-      if (!mazeState) return;
-      const s = mazeState;
-      if (!s.lastMove) s.lastMove = ts;
+      if (!shootState) return;
+      const s = shootState;
+      if (!s.lastTime) s.lastTime = ts;
+      const dt = Math.min((ts - s.lastTime)/1000, 0.05);
+      s.lastTime = ts;
 
-      // Move enemies (slower)
-      const enemyInterval = 550;
-      s.enemyPositions.forEach(ep => {
-        ep.timer += (ts - s.lastMove);
-        while (ep.timer >= enemyInterval) { ep.timer -= enemyInterval; moveEnemy(ep, s.grid, s.cols, s.rows); }
-      });
+      // Wave delay
+      if (s.waveDelay > 0) {
+        s.waveDelay -= dt;
+        if (s.waveDelay <= 0 && s.enemies.length === 0 && s.enemiesRemaining === 0) {
+          if (s.wave > s.maxWaves) {
+            // Planet conquered!
+            conqueredCups.push(s.enemyPlanet.id);
+            localStorage.setItem(CUPS_KEY, JSON.stringify(conqueredCups));
+            showMessage('Planet Conquered!', s.enemyPlanet.color);
+            setTimeout(()=>{
+              shootState=null; gameAnimId=null;
+              const remaining = characters.filter(c=>c.id!==s.playerCh.id && !conqueredCups.includes(c.id));
+              if (remaining.length===0) showWinScreen(s.playerCh);
+              else { showScreen('map'); buildMap(s.playerCh); }
+            }, 2000);
+            return;
+          }
+          s.wave++;
+          spawnWave(s);
+        }
+      }
 
-      // Enemy collision (skip if invulnerable)
-      if (ts > s.invulnUntil) {
-        for (const ep of s.enemyPositions) {
-          if (ep.r === s.py && ep.c === s.px) {
-            s.lives--; updateHUD();
-            if (s.lives <= 0) {
-              showMessage('Game Over!', '#ff4d6a');
-              setTimeout(()=>{ mazeState=null; showScreen('map'); buildMap(s.playerCh); }, 1500);
-              gameAnimId=null; return;
-            }
-            s.px=1; s.py=1;
-            s.invulnUntil = ts + 2000; // 2 sec invulnerability
-            showMessage('Ouch! -1 Life', '#ff4d6a');
-            setTimeout(()=>gameMsg.classList.remove('show'), 800);
+      // Player movement
+      let dx=0, dy=0;
+      if (keys['arrowup']||keys['w']) dy-=1;
+      if (keys['arrowdown']||keys['s']) dy+=1;
+      if (keys['arrowleft']||keys['a']) dx-=1;
+      if (keys['arrowright']||keys['d']) dx+=1;
+      if (dx!==0||dy!==0) {
+        const len = Math.sqrt(dx*dx+dy*dy);
+        dx/=len; dy/=len;
+      }
+      s.px += dx*s.speed*dt;
+      s.py += dy*s.speed*dt;
+      s.px = Math.max(s.radius, Math.min(W-s.radius, s.px));
+      s.py = Math.max(s.radius, Math.min(H-s.radius, s.py));
+
+      // Bullets
+      for (let i=s.bullets.length-1;i>=0;i--) {
+        const b = s.bullets[i];
+        b.x += b.vx*dt; b.y += b.vy*dt;
+        b.life -= dt;
+        if (b.life<=0 || b.x<0||b.x>W||b.y<0||b.y>H) { s.bullets.splice(i,1); continue; }
+        // Hit enemies
+        for (let j=s.enemies.length-1;j>=0;j--) {
+          const e = s.enemies[j];
+          const edx=b.x-e.x, edy=b.y-e.y;
+          if (Math.sqrt(edx*edx+edy*edy) < e.radius+5) {
+            s.bullets.splice(i,1);
+            s.enemies.splice(j,1);
+            s.enemiesRemaining--;
+            spawnParticles(s, e.x, e.y, s.enemyPlanet.color);
+            break;
           }
         }
       }
 
-      // Cup collection
-      if (s.px === s.cupC && s.py === s.cupR) {
-        conqueredCups.push(s.enemyPlanet.id);
-        localStorage.setItem(CUPS_KEY, JSON.stringify(conqueredCups));
-        showMessage('🏆 Cup Collected!', s.enemyPlanet.color);
-        setTimeout(()=>{
-          mazeState=null; gameAnimId=null;
-          const remaining = characters.filter(c=>c.id!==s.playerCh.id && !conqueredCups.includes(c.id));
-          if (remaining.length===0) showWinScreen(s.playerCh);
-          else { showScreen('map'); buildMap(s.playerCh); }
-        }, 1500);
-        return;
+      // Enemies
+      for (const e of s.enemies) {
+        const edx=s.px-e.x, edy=s.py-e.y;
+        const dist = Math.sqrt(edx*edx+edy*edy);
+        if (dist>1) { e.x+=(edx/dist)*e.speed*dt; e.y+=(edy/dist)*e.speed*dt; }
       }
 
-      s.lastMove = ts;
-      drawMaze(s);
+      // Enemy collision
+      if (ts > s.invulnUntil) {
+        for (const e of s.enemies) {
+          const edx=s.px-e.x, edy=s.py-e.y;
+          if (Math.sqrt(edx*edx+edy*edy) < s.radius+e.radius) {
+            s.hearts--;
+            s.invulnUntil = ts + 1500;
+            s.shakeTime = 0.3;
+            if (s.hearts <= 0) {
+              showMessage('Game Over!', '#ff4d6a');
+              setTimeout(()=>{ shootState=null; showScreen('map'); buildMap(s.playerCh); }, 1500);
+              gameAnimId=null; return;
+            }
+            showMessage('Hit!', '#ff4d6a');
+            setTimeout(()=>gameMsg.classList.remove('show'), 600);
+          }
+        }
+      }
+
+      // Particles
+      for (let i=s.particles.length-1;i>=0;i--) {
+        const p=s.particles[i];
+        p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt;
+        if (p.life<=0) s.particles.splice(i,1);
+      }
+
+      // Shake
+      if (s.shakeTime>0) s.shakeTime-=dt;
+
+      // Wave clear check
+      if (s.waveActive && s.enemies.length===0 && s.enemiesRemaining===0) {
+        s.waveActive = false;
+        s.waveDelay = 1.5;
+        showMessage('Wave '+s.wave+' Clear!', '#ffd700');
+        setTimeout(()=>gameMsg.classList.remove('show'), 1200);
+      }
+
+      drawShooter(s, W, H);
       gameAnimId = requestAnimationFrame(gameLoop);
     }
     gameAnimId = requestAnimationFrame(gameLoop);
   }
 
-  function moveEnemy(ep, grid, cols, rows) {
-    const dirs = [[0,1],[1,0],[0,-1],[-1,0]];
-    const [dr, dc] = dirs[ep.dir];
-    const nr=ep.r+dr, nc=ep.c+dc;
-    if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&grid[nr][nc]===0&&Math.random()>0.1) {
-      ep.r=nr; ep.c=nc;
-    } else {
-      ep.dir=Math.floor(Math.random()*4);
+  function spawnWave(s) {
+    const baseCount = 5 + s.wave*3;
+    s.enemiesRemaining = baseCount;
+    s.waveActive = true;
+    const speedBase = 100 + s.wave*25;
+    const spawnDelay = 300;
+    let spawned = 0;
+
+    function spawnOne() {
+      if (!shootState || spawned>=baseCount) return;
+      const side = Math.floor(Math.random()*4);
+      let x, y;
+      const W=800,H=600;
+      const margin=30;
+      if (side===0){x=Math.random()*W;y=-margin;}        // top
+      else if (side===1){x=W+margin;y=Math.random()*H;}  // right
+      else if (side===2){x=Math.random()*W;y=H+margin;}  // bottom
+      else {x=-margin;y=Math.random()*H;}                 // left
+      s.enemies.push({x,y,radius:14,speed:speedBase+Math.random()*40});
+      spawned++;
+      setTimeout(spawnOne, spawnDelay);
+    }
+    spawnOne();
+  }
+
+  function spawnParticles(s, x, y, color) {
+    for (let i=0;i<12;i++) {
+      const angle=Math.random()*Math.PI*2;
+      const speed=80+Math.random()*200;
+      s.particles.push({
+        x,y, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+        life:0.4+Math.random()*0.4, color, size:2+Math.random()*3
+      });
     }
   }
 
-  function drawMaze(s) {
+  function drawShooter(s, W, H) {
     const ctx = gameCanvas.getContext('2d');
-    const cs = s.cellSize;
-    const cw = s.cols*cs, ch = s.rows*cs;
-    ctx.clearRect(0,0,cw,ch);
+    ctx.save();
 
-    // ── Floor: planet-colored gradient with stars ──
-    const pColor = s.enemyPlanet.color;
-    const bgGrad = ctx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw);
-    bgGrad.addColorStop(0, pColor+'18');
-    bgGrad.addColorStop(0.5, pColor+'0a');
-    bgGrad.addColorStop(1, '#050510');
-    ctx.fillStyle = bgGrad; ctx.fillRect(0,0,cw,ch);
+    // Screen shake
+    if (s.shakeTime>0) {
+      const sx=(Math.random()-0.5)*8, sy=(Math.random()-0.5)*8;
+      ctx.translate(sx,sy);
+    }
+
+    // Background
+    const bgGrad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W);
+    const pc=s.enemyPlanet.color;
+    bgGrad.addColorStop(0, pc+'15'); bgGrad.addColorStop(1, '#050510');
+    ctx.fillStyle=bgGrad; ctx.fillRect(0,0,W,H);
+
+    // Arena ring
+    ctx.strokeStyle=pc+'33'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(W/2,H/2,280,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle=pc+'15'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(W/2,H/2,200,0,Math.PI*2); ctx.stroke();
+
     // Stars
-    for (let i=0;i<60;i++) {
-      const sx=(i*137+53)%cw, sy=(i*251+97)%ch;
-      ctx.globalAlpha=0.15+Math.sin(i+Date.now()/2000)*0.15;
-      ctx.fillStyle=pColor; ctx.fillRect(sx,sy,1.5,1.5);
+    for (let i=0;i<40;i++) {
+      const sx=(i*173+37)%W, sy=(i*241+89)%H;
+      ctx.globalAlpha=0.15+Math.sin(i+Date.now()/2000)*0.1;
+      ctx.fillStyle=pc; ctx.fillRect(sx,sy,1.2,1.2);
     }
     ctx.globalAlpha=1;
 
-    // ── Path grid (subtle floor tiles) ──
-    for (let r=0;r<s.rows;r++) {
-      for (let c=0;c<s.cols;c++) {
-        if (s.grid[r][c]===0) {
-          ctx.fillStyle = 'rgba(255,255,255,0.03)';
-          ctx.fillRect(c*cs+1, r*cs+1, cs-2, cs-2);
-        }
-      }
+    // Particles
+    for (const p of s.particles) {
+      ctx.globalAlpha=p.life/0.8;
+      ctx.fillStyle=p.color; ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
     }
+    ctx.globalAlpha=1;
 
-    // ── Walls with 3D depth ──
-    for (let r=0;r<s.rows;r++) {
-      for (let c=0;c<s.cols;c++) {
-        if (s.grid[r][c]===1) {
-          const x=c*cs, y=r*cs;
-          // Wall body
-          const wallGrad = ctx.createLinearGradient(x, y, x+cs, y+cs);
-          wallGrad.addColorStop(0, '#2a2a4a'); wallGrad.addColorStop(0.5, '#1a1a35'); wallGrad.addColorStop(1, '#0f0f25');
-          ctx.fillStyle = wallGrad;
-          ctx.fillRect(x, y, cs, cs);
-          // Top highlight
-          ctx.fillStyle = 'rgba(100,100,160,0.3)';
-          ctx.fillRect(x+1, y+1, cs-2, 3);
-          // Left highlight
-          ctx.fillStyle = 'rgba(80,80,140,0.2)';
-          ctx.fillRect(x+1, y+1, 3, cs-2);
-          // Bottom shadow
-          ctx.fillStyle = 'rgba(0,0,0,0.4)';
-          ctx.fillRect(x+1, y+cs-4, cs-2, 3);
-          // Right shadow
-          ctx.fillStyle = 'rgba(0,0,0,0.35)';
-          ctx.fillRect(x+cs-4, y+1, 3, cs-2);
-          // Border
-          ctx.strokeStyle = 'rgba(60,60,100,0.4)';
-          ctx.lineWidth = 0.5;
-          ctx.strokeRect(x+0.5, y+0.5, cs-1, cs-1);
-        }
-      }
+    // Bullets
+    ctx.fillStyle='#fff';
+    for (const b of s.bullets) {
+      ctx.beginPath(); ctx.arc(b.x,b.y,3,0,Math.PI*2); ctx.fill();
+      // Glow
+      const g=ctx.createRadialGradient(b.x,b.y,1,b.x,b.y,7);
+      g.addColorStop(0,'#fff'); g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.fillRect(b.x-7,b.y-7,14,14);
     }
+    ctx.fillStyle='#fff';
 
-    // ── Cup ──
-    const cupX = s.cupC*cs+cs/2, cupY = s.cupR*cs+cs/2;
-    const cupColor = s.enemyPlanet.color;
-    const cupNow = Date.now()/1000;
-    // Pulsing glow
-    const pulse = 0.7 + Math.sin(cupNow*3)*0.3;
-    const cupGlow = ctx.createRadialGradient(cupX, cupY, 4, cupX, cupY, cs*0.9);
-    cupGlow.addColorStop(0, cupColor); cupGlow.addColorStop(1, 'transparent');
-    ctx.globalAlpha = pulse;
-    ctx.fillStyle = cupGlow; ctx.fillRect(cupX-cs*0.8, cupY-cs*0.8, cs*1.6, cs*1.6);
-    ctx.globalAlpha = 1;
-
-    // Cup base
-    ctx.fillStyle = cupColor;
-    ctx.beginPath(); ctx.moveTo(cupX-12, cupY+8); ctx.lineTo(cupX+12, cupY+8);
-    ctx.lineTo(cupX+10, cupY+12); ctx.lineTo(cupX-10, cupY+12); ctx.closePath(); ctx.fill();
-    // Cup stem
-    ctx.fillStyle = '#ccc';
-    ctx.fillRect(cupX-3, cupY-2, 6, 12);
-    // Cup bowl
-    ctx.fillStyle = cupColor;
-    ctx.beginPath(); ctx.arc(cupX, cupY-6, 10, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = cupColor;
-    ctx.fillRect(cupX-10, cupY-6, 20, 10);
-    // Cup rim highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillRect(cupX-10, cupY-6, 20, 3);
-    // Sparkle
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(cupX+7, cupY-10, 2.5, 0, Math.PI*2); ctx.fill();
-
-    // ── Enemies (planet ruler's character image) ──
-    const eImg = mazeImages.enemy;
-    const eReady = mazeImages.loaded && eImg.complete && eImg.naturalWidth;
-    s.enemyPositions.forEach((ep, i) => {
-      const ex = ep.c*cs+cs/2, ey = ep.r*cs+cs/2;
-      // Red enemy glow
-      const eGlow = ctx.createRadialGradient(ex, ey, 4, ex, ey, cs*0.45);
-      eGlow.addColorStop(0, 'rgba(255,50,50,0.6)'); eGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle = eGlow; ctx.fillRect(ex-cs*0.4, ey-cs*0.4, cs*0.8, cs*0.8);
-
-      // Draw character head
-      const eSize = cs*0.5;
-      ctx.save();
-      ctx.beginPath(); ctx.arc(ex, ey, eSize, 0, Math.PI*2); ctx.clip();
-      if (eReady) {
-        ctx.drawImage(eImg, ex-eSize, ey-eSize, eSize*2, eSize*2);
-      } else {
-        ctx.fillStyle = s.enemyPlanet.color;
-        ctx.fillRect(ex-eSize, ey-eSize, eSize*2, eSize*2);
-      }
+    // Enemies
+    const eImg=shootImages.enemy;
+    const eReady=shootImages.loaded&&eImg.complete&&eImg.naturalWidth;
+    for (const e of s.enemies) {
+      const r=e.radius;
+      // Red glow
+      const eg=ctx.createRadialGradient(e.x,e.y,r*0.5,e.x,e.y,r*1.6);
+      eg.addColorStop(0,'rgba(255,40,40,0.4)'); eg.addColorStop(1,'transparent');
+      ctx.fillStyle=eg; ctx.fillRect(e.x-r*1.6,e.y-r*1.6,r*3.2,r*3.2);
+      // Head
+      ctx.save(); ctx.beginPath(); ctx.arc(e.x,e.y,r,0,Math.PI*2); ctx.clip();
+      if (eReady) ctx.drawImage(eImg,e.x-r,e.y-r,r*2,r*2);
+      else { ctx.fillStyle=s.enemyPlanet.color; ctx.fillRect(e.x-r,e.y-r,r*2,r*2); }
       ctx.restore();
-      // Border ring
-      ctx.strokeStyle = '#ff3333';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(ex, ey, eSize+0.5, 0, Math.PI*2); ctx.stroke();
-      // Eyes
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.beginPath(); ctx.arc(ex-3, ey-2, 2.5, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex+3, ey-2, 2.5, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.arc(ex-3, ey-2, 1, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex+3, ey-2, 1, 0, Math.PI*2); ctx.fill();
-    });
-
-    // ── Player (chosen character image) ──
-    const plX = s.px*cs+cs/2, plY = s.py*cs+cs/2;
-    const pImg = mazeImages.player;
-    const pReady = mazeImages.loaded && pImg.complete && pImg.naturalWidth;
-
-    // Flash when invulnerable
-    const now = Date.now();
-    const isInvuln = now < s.invulnUntil;
-    if (isInvuln && Math.floor(now/150)%2===0) {
-      ctx.globalAlpha = 0.4;
+      ctx.strokeStyle='#ff3333'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(e.x,e.y,r,0,Math.PI*2); ctx.stroke();
     }
 
-    // Player glow
-    const plGlow = ctx.createRadialGradient(plX, plY, 6, plX, plY, cs*0.5);
-    plGlow.addColorStop(0, s.playerCh.color); plGlow.addColorStop(1, 'transparent');
-    ctx.fillStyle = plGlow; ctx.fillRect(plX-cs*0.45, plY-cs*0.45, cs*0.9, cs*0.9);
-
-    // Draw character head
-    const pSize = cs*0.52;
-    ctx.save();
-    ctx.beginPath(); ctx.arc(plX, plY, pSize, 0, Math.PI*2); ctx.clip();
-    if (pReady) {
-      ctx.drawImage(pImg, plX-pSize, plY-pSize, pSize*2, pSize*2);
-    } else {
-      ctx.fillStyle = s.playerCh.color;
-      ctx.fillRect(plX-pSize, plY-pSize, pSize*2, pSize*2);
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(plX, plY-1, 4, 0, Math.PI*2); ctx.fill();
-    }
+    // Player
+    const invuln=Date.now()<s.invulnUntil;
+    if (invuln&&Math.floor(Date.now()/120)%2===0) ctx.globalAlpha=0.35;
+    const pImg=shootImages.player;
+    const pReady=shootImages.loaded&&pImg.complete&&pImg.naturalWidth;
+    const r=s.radius;
+    const pg=ctx.createRadialGradient(s.px,s.py,r*0.5,s.px,s.py,r*2);
+    pg.addColorStop(0,s.playerCh.color+'88'); pg.addColorStop(1,'transparent');
+    ctx.fillStyle=pg; ctx.fillRect(s.px-r*2,s.py-r*2,r*4,r*4);
+    ctx.save(); ctx.beginPath(); ctx.arc(s.px,s.py,r,0,Math.PI*2); ctx.clip();
+    if (pReady) ctx.drawImage(pImg,s.px-r,s.py-r,r*2,r*2);
+    else { ctx.fillStyle=s.playerCh.color; ctx.fillRect(s.px-r,s.py-r,r*2,r*2); }
     ctx.restore();
-    // Player border
-    ctx.strokeStyle = s.playerCh.color;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(plX, plY, pSize+0.5, 0, Math.PI*2); ctx.stroke();
-    ctx.globalAlpha = 1; // reset after invuln flash
+    ctx.strokeStyle=s.playerCh.color; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(s.px,s.py,r,0,Math.PI*2); ctx.stroke();
+    ctx.globalAlpha=1;
+
+    // Crosshair line
+    const angle = Math.atan2(mouseY-H/2, mouseX-W/2);
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+    ctx.setLineDash([4,8]);
+    ctx.beginPath(); ctx.moveTo(s.px,s.py);
+    ctx.lineTo(s.px+Math.cos(angle)*200,s.py+Math.sin(angle)*200);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    ctx.restore();
+
+    // HUD
+    document.getElementById('gameLives').textContent='❤️'.repeat(s.hearts);
+    document.getElementById('gameCupsLabel').textContent='Wave '+s.wave+'/'+s.maxWaves+' | Enemies: '+s.enemiesRemaining;
   }
 
   function showMessage(text, color) {
@@ -818,18 +808,40 @@
     setTimeout(()=>gameMsg.classList.remove('show'), 1200);
   }
 
-  function updateHUD() {
-    if (!mazeState) return;
-    gameLives.textContent = '❤️'.repeat(mazeState.lives);
-    gameCupsLabel.textContent = '🏆 '+conqueredCups.length+'/3 cups';
-  }
+  // ── Mouse tracking ──
+  gameCanvas.addEventListener('mousemove', (e)=>{
+    const rect = gameCanvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+  });
+
+  gameCanvas.addEventListener('click', (e)=>{
+    if (!shootState) return;
+    const s=shootState;
+    const angle=Math.atan2(mouseY-300, mouseX-400); // relative to center (W/2=400,H/2=300)
+    const bulletSpeed=600;
+    s.bullets.push({
+      x:s.px+Math.cos(angle)*18, y:s.py+Math.sin(angle)*18,
+      vx:Math.cos(angle)*bulletSpeed, vy:Math.sin(angle)*bulletSpeed,
+      life:1.5
+    });
+  });
+
+  // ── Keyboard tracking ──
+  document.addEventListener('keydown', (e)=>{
+    keys[e.key.toLowerCase()] = true;
+    if (e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight') e.preventDefault();
+  });
+  document.addEventListener('keyup', (e)=>{
+    keys[e.key.toLowerCase()] = false;
+  });
 
   // ═══════════════════════════════════════════
   //  WIN SCREEN
   // ═══════════════════════════════════════════
   function showWinScreen(playerCh) {
     if (gameAnimId) cancelAnimationFrame(gameAnimId);
-    mazeState=null;
+    shootState=null;
 
     winCharImg.src = playerCh.src;
     winText.textContent = playerCh.name + ' has conquered all planets!';
@@ -876,7 +888,7 @@
 
   btnLeave.addEventListener('click', ()=>{
     if (gameAnimId) cancelAnimationFrame(gameAnimId);
-    mazeState=null;
+    shootState=null;
     gameMsg.classList.remove('show');
     const playerCh = characters.find(c=>c.id===selectedId);
     showScreen('map'); buildMap(playerCh);
@@ -886,25 +898,6 @@
     conqueredCups=[]; localStorage.removeItem(CUPS_KEY);
     clearSelection();
     showScreen('select');
-  });
-
-  // Keyboard controls
-  document.addEventListener('keydown', (e)=>{
-    if (!mazeState) return;
-    const s = mazeState;
-    const key = e.key.toLowerCase();
-    let dx=0, dy=0;
-    if (key==='arrowup'||key==='w') dy=-1;
-    else if (key==='arrowdown'||key==='s') dy=1;
-    else if (key==='arrowleft'||key==='a') dx=-1;
-    else if (key==='arrowright'||key==='d') dx=1;
-    else return;
-
-    e.preventDefault();
-    const nx=s.px+dx, ny=s.py+dy;
-    if (nx>=0 && nx<s.cols && ny>=0 && ny<s.rows && s.grid[ny][nx]===0) {
-      s.px=nx; s.py=ny;
-    }
   });
 
   // Restore previous selection
