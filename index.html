@@ -713,9 +713,9 @@
     // ── Cup ──
     const cupX = s.cupC*cs+cs/2, cupY = s.cupR*cs+cs/2;
     const cupColor = s.enemyPlanet.color;
-    const now = Date.now()/1000;
+    const cupNow = Date.now()/1000;
     // Pulsing glow
-    const pulse = 0.7 + Math.sin(now*3)*0.3;
+    const pulse = 0.7 + Math.sin(cupNow*3)*0.3;
     const cupGlow = ctx.createRadialGradient(cupX, cupY, 4, cupX, cupY, cs*0.9);
     cupGlow.addColorStop(0, cupColor); cupGlow.addColorStop(1, 'transparent');
     ctx.globalAlpha = pulse;
