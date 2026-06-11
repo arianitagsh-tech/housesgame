@@ -15,9 +15,13 @@
       --text-dim: #8888a0;
       --accent: #7c5cff;
       --accent-glow: rgba(124, 92, 255, 0.3);
-      --danger: #ff4d6a;
       --radius: 16px;
       --transition: 0.25s ease;
+      /* Character colors */
+      --color-speedster: #ff4d4d;
+      --color-hipster: #b44dff;
+      --color-engineer: #4dff6b;
+      --color-shadow: #4d8bff;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
@@ -37,7 +41,11 @@
         radial-gradient(ellipse at 50% 100%, rgba(124, 92, 255, 0.04) 0%, transparent 60%);
     }
 
-    /* ── Header ── */
+    /* ── Screen switching ── */
+    .screen { display: none; width: 100%; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+    /* ── SCREEN 1: Character Selection ── */
     .header {
       text-align: center;
       margin-bottom: 3rem;
@@ -59,7 +67,6 @@
       font-size: 1.15rem;
     }
 
-    /* ── Character Grid ── */
     .character-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -173,7 +180,6 @@
       color: var(--text);
     }
 
-    /* ── Selected info ── */
     .selected-info {
       text-align: center;
       margin-top: 1.5rem;
@@ -182,52 +188,243 @@
       min-height: 1.5em;
     }
 
+    /* ── SCREEN 2: Planet Map ── */
+    .map-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .map-header h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .map-header .subtitle {
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      margin-top: 0.5rem;
+    }
+
+    .player-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1.2rem;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    .planet-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 3rem 4rem;
+      max-width: 1100px;
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    .planet {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .planet:hover {
+      transform: scale(1.08);
+    }
+
+    .planet-sphere {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      position: relative;
+      box-shadow: 0 0 60px var(--glow-color), 0 0 120px var(--glow-color);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .planet:hover .planet-sphere {
+      box-shadow: 0 0 80px var(--glow-color), 0 0 160px var(--glow-color);
+    }
+
+    .planet-name {
+      margin-top: 1rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--planet-color);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .planet-label {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-top: 0.2rem;
+    }
+
+    /* Planet gradients per color */
+    .planet-red {
+      background: radial-gradient(circle at 35% 35%, #ff9999, #cc0000 50%, #660000);
+    }
+    .planet-purple {
+      background: radial-gradient(circle at 35% 35%, #c99dff, #7700cc 50%, #3b0066);
+    }
+    .planet-green {
+      background: radial-gradient(circle at 35% 35%, #99ffaa, #00cc22 50%, #006611);
+    }
+    .planet-blue {
+      background: radial-gradient(circle at 35% 35%, #99bbff, #0055cc 50%, #002266);
+    }
+
+    .planet-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 3px solid;
+      border-color: var(--ring-color);
+      opacity: 0.3;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotateX(75deg);
+    }
+
+    .map-back-btn {
+      margin-top: 3rem;
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      padding: 0.7rem 2rem;
+      border-radius: 50px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all var(--transition);
+    }
+
+    .map-back-btn:hover {
+      border-color: var(--text-dim);
+      color: var(--text);
+    }
+
+    /* ── Stars background ── */
+    .stars {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+      animation: twinkle var(--dur) ease-in-out infinite;
+      animation-delay: var(--delay);
+      opacity: 0;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.9; }
+    }
+
     /* ── Footer ── */
     .footer {
       margin-top: 3rem;
       color: var(--text-dim);
       font-size: 0.8rem;
+      text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <h1>Choose Your Character</h1>
-    <p>Select one to begin the adventure</p>
+  <!-- ── Stars background ── -->
+  <div class="stars" id="stars"></div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 1: Character Selection
+       ═══════════════════════════════════════════ -->
+  <div class="screen active" id="screenSelect">
+    <div class="header">
+      <h1>Choose Your Character</h1>
+      <p>Select one to begin the adventure</p>
+    </div>
+
+    <div class="character-grid" id="characterGrid"></div>
+
+    <p class="selected-info" id="selectedInfo"></p>
+
+    <div style="text-align:center">
+      <button class="btn btn-primary" id="btnStart" disabled onclick="startGame()">Start Game</button>
+      <button class="btn btn-secondary" id="btnReset">Reset</button>
+    </div>
+
+    <p class="footer">&copy; House's Game</p>
   </div>
 
-  <div class="character-grid" id="characterGrid">
-    <!-- Populated by JS -->
+  <!-- ═══════════════════════════════════════════
+       SCREEN 2: Planet Map
+       ═══════════════════════════════════════════ -->
+  <div class="screen" id="screenMap">
+    <div class="map-header">
+      <div class="player-badge" id="playerBadge"></div>
+      <h1>Select a Planet to Invade</h1>
+      <div class="subtitle">Each planet is ruled by a rival character</div>
+    </div>
+
+    <div class="planet-grid" id="planetGrid"></div>
+
+    <button class="map-back-btn" id="btnBack">← Back to Character Select</button>
+    <p class="footer" style="margin-top:2rem">&copy; House's Game</p>
   </div>
-
-  <p class="selected-info" id="selectedInfo"></p>
-
-  <div style="text-align:center">
-    <button class="btn btn-primary" id="btnStart" disabled>Start Game</button>
-    <button class="btn btn-secondary" id="btnReset">Reset</button>
-  </div>
-
-  <p class="footer">&copy; House's Game</p>
 
   <script>
     (function() {
+      // ── Character data with colors ──
       const characters = [
-        { id: 1, name: 'Speedster', src: 'assets/character-1.jpg' },
-        { id: 2, name: 'Hipster',    src: 'assets/character-2.jpg' },
-        { id: 3, name: 'Engineer',   src: 'assets/character-3.jpg' },
-        { id: 4, name: 'Shadow',     src: 'assets/character-4.jpg' },
+        { id: 1, name: 'Speedster', src: 'assets/character-1.jpg', color: '#ff4d4d', colorName: 'red'    },
+        { id: 2, name: 'Hipster',    src: 'assets/character-2.jpg', color: '#b44dff', colorName: 'purple' },
+        { id: 3, name: 'Engineer',   src: 'assets/character-3.jpg', color: '#4dff6b', colorName: 'green'  },
+        { id: 4, name: 'Shadow',     src: 'assets/character-4.jpg', color: '#4d8bff', colorName: 'blue'   },
       ];
 
       const STORAGE_KEY = 'housesgame_selected_character';
       let selectedId = null;
 
-      const grid = document.getElementById('characterGrid');
-      const btnStart = document.getElementById('btnStart');
-      const btnReset = document.getElementById('btnReset');
+      // ── DOM refs ──
+      const screenSelect = document.getElementById('screenSelect');
+      const screenMap    = document.getElementById('screenMap');
+      const grid         = document.getElementById('characterGrid');
+      const btnStart     = document.getElementById('btnStart');
+      const btnReset     = document.getElementById('btnReset');
       const selectedInfo = document.getElementById('selectedInfo');
+      const planetGrid   = document.getElementById('planetGrid');
+      const playerBadge  = document.getElementById('playerBadge');
+      const btnBack      = document.getElementById('btnBack');
 
-      // Build cards
+      // ── Stars ──
+      const starsEl = document.getElementById('stars');
+      for (let i = 0; i < 120; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.left = Math.random() * 100 + '%';
+        s.style.top  = Math.random() * 100 + '%';
+        const size = Math.random() * 2.5 + 1;
+        s.style.width  = size + 'px';
+        s.style.height = size + 'px';
+        s.style.setProperty('--dur', (Math.random() * 3 + 2) + 's');
+        s.style.setProperty('--delay', Math.random() * 5 + 's');
+        starsEl.appendChild(s);
+      }
+
+      // ── Build character cards ──
       characters.forEach(ch => {
         const card = document.createElement('div');
         card.className = 'character-card';
@@ -261,18 +458,12 @@
 
       function selectCharacter(id) {
         selectedId = id;
-
-        // Update cards
         document.querySelectorAll('.character-card').forEach(c => {
           const isSelected = +c.dataset.id === id;
           c.classList.toggle('selected', isSelected);
           c.setAttribute('aria-checked', isSelected);
         });
-
-        // Save to localStorage
         localStorage.setItem(STORAGE_KEY, id);
-
-        // Update UI
         const ch = characters.find(c => c.id === id);
         selectedInfo.textContent = 'Selected: ' + ch.name;
         btnStart.disabled = false;
@@ -289,23 +480,90 @@
         btnStart.disabled = true;
       }
 
-      // Restore previous selection
+      // ── Switch screens ──
+      function showScreen(name) {
+        screenSelect.classList.toggle('active', name === 'select');
+        screenMap.classList.toggle('active', name === 'map');
+      }
+
+      // ── Build planet map ──
+      function buildMap(playerCh) {
+        planetGrid.innerHTML = '';
+
+        // Player badge
+        playerBadge.textContent = '⚔ You: ' + playerCh.name;
+        playerBadge.style.background = playerCh.color + '22';
+        playerBadge.style.color = playerCh.color;
+        playerBadge.style.border = '1px solid ' + playerCh.color + '44';
+
+        // Enemy planets (all except chosen)
+        const enemies = characters.filter(c => c.id !== playerCh.id);
+
+        enemies.forEach(enemy => {
+          const planet = document.createElement('div');
+          planet.className = 'planet';
+
+          const sphere = document.createElement('div');
+          sphere.className = 'planet-sphere planet-' + enemy.colorName;
+          sphere.style.setProperty('--glow-color', enemy.color + '88');
+          sphere.style.setProperty('--planet-color', enemy.color);
+
+          // Planet ring
+          const ringSize = 220 + Math.random() * 40;
+          const ring = document.createElement('div');
+          ring.className = 'planet-ring';
+          ring.style.width  = ringSize + 'px';
+          ring.style.height = ringSize * 0.35 + 'px';
+          ring.style.setProperty('--ring-color', enemy.color);
+          ring.style.borderColor = enemy.color;
+          sphere.appendChild(ring);
+
+          const name = document.createElement('div');
+          name.className = 'planet-name';
+          name.style.setProperty('--planet-color', enemy.color);
+          name.textContent = enemy.name;
+
+          const label = document.createElement('div');
+          label.className = 'planet-label';
+          label.textContent = 'Planet';
+
+          planet.appendChild(sphere);
+          planet.appendChild(name);
+          planet.appendChild(label);
+
+          planet.addEventListener('click', () => {
+            // Placeholder for planet selection
+            alert('Invading ' + enemy.name + "'s planet!\n\nPlanet gameplay coming soon...");
+          });
+
+          planetGrid.appendChild(planet);
+        });
+      }
+
+      // ── Start Game → Show map ──
+      function startGame() {
+        if (!selectedId) return;
+        const playerCh = characters.find(c => c.id === selectedId);
+        buildMap(playerCh);
+        showScreen('map');
+      }
+      window.startGame = startGame;
+
+      btnStart.addEventListener('click', startGame);
+
+      // ── Reset ──
+      btnReset.addEventListener('click', clearSelection);
+
+      // ── Back button ──
+      btnBack.addEventListener('click', () => {
+        showScreen('select');
+      });
+
+      // ── Restore previous selection ──
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         selectCharacter(+saved);
       }
-
-      // Start button
-      btnStart.addEventListener('click', () => {
-        if (!selectedId) return;
-        // Game start — placeholder for now
-        alert('Starting game with ' + characters.find(c => c.id === selectedId).name + '!\n\nGame mechanics coming soon...');
-      });
-
-      // Reset button
-      btnReset.addEventListener('click', () => {
-        clearSelection();
-      });
     })();
   </script>
 
