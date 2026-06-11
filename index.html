@@ -540,8 +540,8 @@
     if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
     if (gameAnimId) cancelAnimationFrame(gameAnimId);
 
-    const cols = 21, rows = 15;
-    const cellSize = 42;
+    const cols = 17, rows = 11;
+    const cellSize = 48;
     const cw = cols*cellSize, ch = rows*cellSize;
     gameCanvas.width = cw; gameCanvas.height = ch;
     gameCanvas.style.width = cw+'px'; gameCanvas.style.height = ch+'px';
@@ -556,7 +556,7 @@
     const forbidden = new Set(['1,1','1,2','2,1',(rows-2)+','+(cols-2),(rows-3)+','+(cols-2)]);
     const shuffled = pathPositions.sort(()=>Math.random()-0.5);
     for (const pos of shuffled) {
-      if (enemyPositions.length>=3) break;
+      if (enemyPositions.length>=2) break;
       const key = pos.r+','+pos.c;
       if (!forbidden.has(key)) {
         enemyPositions.push({r:pos.r,c:pos.c,dir:Math.floor(Math.random()*4),timer:0});
@@ -574,7 +574,8 @@
       img.onload = img.onerror = () => { loaded++; if (loaded >= toLoad) mazeImages.loaded = true; };
     });
 
-    let lives = 3;
+    let lives = 5;
+    let invulnUntil = 0; // timestamp until invulnerable
     let lastMove = 0;
 
     gamePlanetLabel.textContent = enemyPlanet.name + "'s Planet";
@@ -584,32 +585,35 @@
     gameMsg.classList.remove('show');
 
     mazeState = { grid, cols, rows, cellSize, px, py, cupR, cupC, enemyPositions,
-                  lives, lastMove, playerCh, enemyPlanet };
+                  lives, invulnUntil, lastMove, playerCh, enemyPlanet };
 
     function gameLoop(ts) {
       if (!mazeState) return;
       const s = mazeState;
       if (!s.lastMove) s.lastMove = ts;
 
-      // Move enemies
-      const enemyInterval = 380;
+      // Move enemies (slower)
+      const enemyInterval = 550;
       s.enemyPositions.forEach(ep => {
         ep.timer += (ts - s.lastMove);
         while (ep.timer >= enemyInterval) { ep.timer -= enemyInterval; moveEnemy(ep, s.grid, s.cols, s.rows); }
       });
 
-      // Enemy collision
-      for (const ep of s.enemyPositions) {
-        if (ep.r === s.py && ep.c === s.px) {
-          s.lives--; updateHUD();
-          if (s.lives <= 0) {
-            showMessage('Game Over!', '#ff4d6a');
-            setTimeout(()=>{ mazeState=null; showScreen('map'); buildMap(s.playerCh); }, 1500);
-            gameAnimId=null; return;
+      // Enemy collision (skip if invulnerable)
+      if (ts > s.invulnUntil) {
+        for (const ep of s.enemyPositions) {
+          if (ep.r === s.py && ep.c === s.px) {
+            s.lives--; updateHUD();
+            if (s.lives <= 0) {
+              showMessage('Game Over!', '#ff4d6a');
+              setTimeout(()=>{ mazeState=null; showScreen('map'); buildMap(s.playerCh); }, 1500);
+              gameAnimId=null; return;
+            }
+            s.px=1; s.py=1;
+            s.invulnUntil = ts + 2000; // 2 sec invulnerability
+            showMessage('Ouch! -1 Life', '#ff4d6a');
+            setTimeout(()=>gameMsg.classList.remove('show'), 800);
           }
-          s.px=1; s.py=1;
-          showMessage('Ouch! -1 Life', '#ff4d6a');
-          setTimeout(()=>gameMsg.classList.remove('show'), 800);
         }
       }
 
@@ -638,7 +642,7 @@
     const dirs = [[0,1],[1,0],[0,-1],[-1,0]];
     const [dr, dc] = dirs[ep.dir];
     const nr=ep.r+dr, nc=ep.c+dc;
-    if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&grid[nr][nc]===0&&Math.random()>0.2) {
+    if (nr>0&&nr<rows-1&&nc>0&&nc<cols-1&&grid[nr][nc]===0&&Math.random()>0.1) {
       ep.r=nr; ep.c=nc;
     } else {
       ep.dir=Math.floor(Math.random()*4);
@@ -775,6 +779,14 @@
     const plX = s.px*cs+cs/2, plY = s.py*cs+cs/2;
     const pImg = mazeImages.player;
     const pReady = mazeImages.loaded && pImg.complete && pImg.naturalWidth;
+
+    // Flash when invulnerable
+    const now = Date.now();
+    const isInvuln = now < s.invulnUntil;
+    if (isInvuln && Math.floor(now/150)%2===0) {
+      ctx.globalAlpha = 0.4;
+    }
+
     // Player glow
     const plGlow = ctx.createRadialGradient(plX, plY, 6, plX, plY, cs*0.5);
     plGlow.addColorStop(0, s.playerCh.color); plGlow.addColorStop(1, 'transparent');
@@ -797,6 +809,7 @@
     ctx.strokeStyle = s.playerCh.color;
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(plX, plY, pSize+0.5, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1; // reset after invuln flash
   }
 
   function showMessage(text, color) {
