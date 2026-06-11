@@ -515,15 +515,17 @@
     gameCanvas.width = W; gameCanvas.height = H;
     gameCanvas.style.width = W+'px'; gameCanvas.style.height = H+'px';
 
-    // Preload images
+    // Preload images (non-blocking, fall back to colored circles)
     shootImages = {};
     shootImages.player = new Image(); shootImages.player.src = playerCh.src;
     shootImages.enemy = new Image(); shootImages.enemy.src = enemyPlanet.src;
     shootImages.loaded = false;
     let toLoad=2, loaded=0;
-    [shootImages.player, shootImages.enemy].forEach(img=>{
-      img.onload=img.onerror=()=>{loaded++;if(loaded>=toLoad)shootImages.loaded=true;};
-    });
+    function markLoaded() { loaded++; if (loaded>=toLoad) shootImages.loaded=true; }
+    shootImages.player.onload = markLoaded;
+    shootImages.enemy.onload = markLoaded;
+    shootImages.player.onerror = markLoaded;
+    shootImages.enemy.onerror = markLoaded;
 
     const state = {
       playerCh, enemyPlanet,
@@ -675,7 +677,7 @@
     let spawned = 0;
 
     function spawnOne() {
-      if (!shootState || spawned>=baseCount) return;
+      if (!shootState || spawned>=waveCounts[s.wave]) return;
       const side = Math.floor(Math.random()*4);
       let x, y;
       const W=800,H=600;
