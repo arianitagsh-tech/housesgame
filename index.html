@@ -564,7 +564,7 @@
       if (s.waveDelay > 0) {
         s.waveDelay -= dt;
         if (s.waveDelay <= 0 && s.enemies.length === 0 && s.enemiesRemaining === 0) {
-          if (s.wave > s.maxWaves) {
+          if (s.wave >= s.maxWaves) {
             // Planet conquered!
             conqueredCups.push(s.enemyPlanet.id);
             localStorage.setItem(CUPS_KEY, JSON.stringify(conqueredCups));
@@ -668,11 +668,12 @@
   }
 
   function spawnWave(s) {
-    const baseCount = 3 + s.wave*2;
-    s.enemiesRemaining = baseCount;
+    const waveCounts = [0, 3, 5, 7];    // wave 1 easy, 2 medium, 3 harder
+    const waveSpeeds = [0, 100, 130, 160];
+    s.enemiesRemaining = waveCounts[s.wave];
     s.waveActive = true;
-    const speedBase = 100 + s.wave*25;
-    const spawnDelay = 300;
+    const speedBase = waveSpeeds[s.wave];
+    const spawnDelay = 400;
     let spawned = 0;
 
     function spawnOne() {
