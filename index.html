@@ -668,7 +668,7 @@
   }
 
   function spawnWave(s) {
-    const baseCount = 5 + s.wave*3;
+    const baseCount = 3 + s.wave*2;
     s.enemiesRemaining = baseCount;
     s.waveActive = true;
     const speedBase = 100 + s.wave*25;
@@ -787,8 +787,8 @@
     ctx.beginPath(); ctx.arc(s.px,s.py,r,0,Math.PI*2); ctx.stroke();
     ctx.globalAlpha=1;
 
-    // Crosshair line
-    const angle = Math.atan2(mouseY-H/2, mouseX-W/2);
+    // Crosshair line (player to mouse)
+    const angle = Math.atan2(mouseY-s.py, mouseX-s.px);
     ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
     ctx.setLineDash([4,8]);
     ctx.beginPath(); ctx.moveTo(s.px,s.py);
@@ -818,7 +818,7 @@
   gameCanvas.addEventListener('click', (e)=>{
     if (!shootState) return;
     const s=shootState;
-    const angle=Math.atan2(mouseY-300, mouseX-400); // relative to center (W/2=400,H/2=300)
+    const angle=Math.atan2(mouseY-s.py, mouseX-s.px);
     const bulletSpeed=600;
     s.bullets.push({
       x:s.px+Math.cos(angle)*18, y:s.py+Math.sin(angle)*18,
