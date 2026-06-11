@@ -568,10 +568,9 @@
     mazeImages = {};
     mazeImages.player = new Image(); mazeImages.player.src = playerCh.src;
     mazeImages.enemy = new Image(); mazeImages.enemy.src = enemyPlanet.src;
-    mazeImages.bg = new Image(); mazeImages.bg.src = 'assets/space-background.jpg';
     mazeImages.loaded = false;
-    let toLoad = 3, loaded = 0;
-    [mazeImages.player, mazeImages.enemy, mazeImages.bg].forEach(img => {
+    let toLoad = 2, loaded = 0;
+    [mazeImages.player, mazeImages.enemy].forEach(img => {
       img.onload = img.onerror = () => { loaded++; if (loaded >= toLoad) mazeImages.loaded = true; };
     });
 
@@ -652,24 +651,17 @@
     const cw = s.cols*cs, ch = s.rows*cs;
     ctx.clearRect(0,0,cw,ch);
 
-    // ── Floor: space background image or gradient ──
-    if (mazeImages.loaded && mazeImages.bg.complete && mazeImages.bg.naturalWidth) {
-      ctx.drawImage(mazeImages.bg, 0, 0, cw, ch);
-      // Darken slightly
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.fillRect(0, 0, cw, ch);
-    } else {
-      const bgGrad = ctx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw);
-      bgGrad.addColorStop(0,'#0d0d2b'); bgGrad.addColorStop(1,'#050510');
-      ctx.fillStyle = bgGrad; ctx.fillRect(0,0,cw,ch);
-      // Stars
-      for (let i=0;i<60;i++) {
-        const sx=(i*137+53)%cw, sy=(i*251+97)%ch;
-        ctx.globalAlpha=0.2+Math.sin(i+Date.now()/2000)*0.2;
-        ctx.fillStyle='white'; ctx.fillRect(sx,sy,1.5,1.5);
-      }
-      ctx.globalAlpha=1;
+    // ── Floor: dark gradient with stars ──
+    const bgGrad = ctx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,cw);
+    bgGrad.addColorStop(0,'#0d0d2b'); bgGrad.addColorStop(1,'#050510');
+    ctx.fillStyle = bgGrad; ctx.fillRect(0,0,cw,ch);
+    // Stars
+    for (let i=0;i<60;i++) {
+      const sx=(i*137+53)%cw, sy=(i*251+97)%ch;
+      ctx.globalAlpha=0.2+Math.sin(i+Date.now()/2000)*0.2;
+      ctx.fillStyle='white'; ctx.fillRect(sx,sy,1.5,1.5);
     }
+    ctx.globalAlpha=1;
 
     // ── Path grid (subtle floor tiles) ──
     for (let r=0;r<s.rows;r++) {
