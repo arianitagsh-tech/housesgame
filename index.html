@@ -3,759 +3,845 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>House's Game — Choose Your Character</title>
+  <title>House's Game</title>
   <style>
-    /* ── Theme (CSS custom properties) ── */
     :root {
-      --bg: #0a0a0f;
-      --bg-card: #14141f;
-      --border: #2a2a3a;
-      --border-hover: #7c5cff;
-      --text: #e0e0e8;
-      --text-dim: #8888a0;
-      --accent: #7c5cff;
-      --accent-glow: rgba(124, 92, 255, 0.3);
-      --radius: 16px;
-      --transition: 0.25s ease;
-      /* Character colors */
-      --color-speedster: #ff4d4d;
-      --color-hipster: #b44dff;
-      --color-engineer: #4dff6b;
-      --color-shadow: #4d8bff;
+      --bg: #0a0a0f; --bg-card: #14141f; --border: #2a2a3a;
+      --border-hover: #7c5cff; --text: #e0e0e8; --text-dim: #8888a0;
+      --accent: #7c5cff; --accent-glow: rgba(124,92,255,0.3);
+      --radius: 16px; --transition: 0.25s ease;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 2rem;
       background-image:
-        radial-gradient(ellipse at 50% 0%, rgba(124, 92, 255, 0.08) 0%, transparent 60%),
-        radial-gradient(ellipse at 50% 100%, rgba(124, 92, 255, 0.04) 0%, transparent 60%);
+        radial-gradient(ellipse at 50% 0%, rgba(124,92,255,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 50% 100%, rgba(124,92,255,0.04) 0%, transparent 60%);
     }
-
-    /* ── Screen switching ── */
     .screen { display: none; width: 100%; }
     .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-    /* ── SCREEN 1: Character Selection ── */
-    .header {
-      text-align: center;
-      margin-bottom: 3rem;
-    }
-
+    /* ═══ SCREEN 1: Character Selection ═══ */
+    .header { text-align: center; margin-bottom: 3rem; }
     .header h1 {
-      font-size: 2.8rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
+      font-size: 2.8rem; font-weight: 800; letter-spacing: -0.02em;
       background: linear-gradient(135deg, #c4b5fd, #7c5cff, #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       margin-bottom: 0.4rem;
     }
-
-    .header p {
-      color: var(--text-dim);
-      font-size: 1.15rem;
-    }
-
+    .header p { color: var(--text-dim); font-size: 1.15rem; }
     .character-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.5rem;
-      max-width: 1100px;
-      width: 100%;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem; max-width: 1100px; width: 100%;
     }
-
     .character-card {
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      cursor: pointer;
+      background: var(--bg-card); border: 2px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; cursor: pointer;
       transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
       position: relative;
     }
-
-    .character-card:hover,
-    .character-card:focus-visible {
-      border-color: var(--border-hover);
-      box-shadow: 0 0 30px var(--accent-glow);
-      transform: translateY(-4px);
-      outline: none;
+    .character-card:hover, .character-card:focus-visible {
+      border-color: var(--border-hover); box-shadow: 0 0 30px var(--accent-glow);
+      transform: translateY(-4px); outline: none;
     }
-
     .character-card.selected {
       border-color: var(--accent);
-      box-shadow: 0 0 40px var(--accent-glow), inset 0 0 40px rgba(124, 92, 255, 0.08);
+      box-shadow: 0 0 40px var(--accent-glow), inset 0 0 40px rgba(124,92,255,0.08);
     }
-
     .character-card.selected::after {
-      content: '✓';
-      position: absolute;
-      top: 12px;
-      right: 14px;
-      width: 32px;
-      height: 32px;
-      background: var(--accent);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 0.9rem;
+      content: '✓'; position: absolute; top: 12px; right: 14px; width: 32px; height: 32px;
+      background: var(--accent); border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-weight: bold; font-size: 0.9rem;
       box-shadow: 0 0 14px var(--accent-glow);
     }
+    .character-card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; background: #1a1a2e; }
+    .character-label { padding: 0.9rem 1rem; text-align: center; font-weight: 600; font-size: 1rem; color: var(--text-dim); transition: color var(--transition); }
+    .character-card:hover .character-label, .character-card.selected .character-label { color: var(--text); }
 
-    .character-card img {
-      width: 100%;
-      aspect-ratio: 3 / 4;
-      object-fit: cover;
-      display: block;
-      background: #1a1a2e;
-    }
-
-    .character-label {
-      padding: 0.9rem 1rem;
-      text-align: center;
-      font-weight: 600;
-      font-size: 1rem;
-      color: var(--text-dim);
-      transition: color var(--transition);
-    }
-
-    .character-card:hover .character-label,
-    .character-card.selected .character-label {
-      color: var(--text);
-    }
-
-    /* ── Button ── */
     .btn {
-      margin-top: 2.5rem;
-      padding: 1rem 3rem;
-      font-size: 1.1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: all var(--transition);
+      margin-top: 2.5rem; padding: 1rem 3rem; font-size: 1.1rem; font-weight: 700;
+      border: none; border-radius: 50px; cursor: pointer; transition: all var(--transition);
       font-family: inherit;
     }
+    .btn-primary { background: linear-gradient(135deg, #7c5cff, #5b3fe8); color: #fff; box-shadow: 0 4px 24px var(--accent-glow); }
+    .btn-primary:hover { box-shadow: 0 6px 36px rgba(124,92,255,0.5); transform: translateY(-2px); }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; transform: none; }
+    .btn-secondary { background: transparent; color: var(--text-dim); border: 1px solid var(--border); margin-left: 1rem; }
+    .btn-secondary:hover { border-color: var(--text-dim); color: var(--text); }
+    .selected-info { text-align: center; margin-top: 1.5rem; color: var(--accent); font-weight: 600; min-height: 1.5em; }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #7c5cff, #5b3fe8);
-      color: #fff;
-      box-shadow: 0 4px 24px var(--accent-glow);
-    }
-
-    .btn-primary:hover {
-      box-shadow: 0 6px 36px rgba(124, 92, 255, 0.5);
-      transform: translateY(-2px);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-      box-shadow: none;
-      transform: none;
-    }
-
-    .btn-secondary {
-      background: transparent;
-      color: var(--text-dim);
-      border: 1px solid var(--border);
-      margin-left: 1rem;
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--text-dim);
-      color: var(--text);
-    }
-
-    .selected-info {
-      text-align: center;
-      margin-top: 1.5rem;
-      color: var(--accent);
-      font-weight: 600;
-      min-height: 1.5em;
-    }
-
-    /* ── SCREEN 2: Planet Orbit Map ── */
-    .map-header {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .map-header h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      margin-bottom: 0.3rem;
-    }
-
-    .map-header .subtitle {
-      color: var(--text-dim);
-      font-size: 1rem;
-    }
-
+    /* ═══ SCREEN 2: Orbit Map ═══ */
+    .map-header { text-align: center; margin-bottom: 1.5rem; }
+    .map-header h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 0.3rem; }
+    .map-header .subtitle { color: var(--text-dim); font-size: 1rem; }
     .player-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 1.2rem;
-      border-radius: 50px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 0.8rem;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 1.2rem; border-radius: 50px; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.8rem;
     }
-    .orbit-scene {
-      position: relative;
-      width: 600px;
-      height: 600px;
-      margin: 0 auto;
-    }
-
+    .orbit-scene { position: relative; width: 600px; height: 600px; margin: 0 auto; }
     .orbit-center {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 70px; height: 70px;
-      margin: -35px 0 0 -35px;
-      border-radius: 50%;
+      position: absolute; top: 50%; left: 50%; width: 70px; height: 70px;
+      margin: -35px 0 0 -35px; border-radius: 50%;
       background: radial-gradient(circle, #fff9c4, #ffb300, #e65100);
-      box-shadow: 0 0 60px rgba(255, 179, 0, 0.7), 0 0 120px rgba(255, 152, 0, 0.3);
-      z-index: 10;
-      animation: sunPulse 2s ease-in-out infinite;
+      box-shadow: 0 0 60px rgba(255,179,0,0.7), 0 0 120px rgba(255,152,0,0.3);
+      z-index: 10; animation: sunPulse 2s ease-in-out infinite;
     }
-
     @keyframes sunPulse {
-      0%, 100% { box-shadow: 0 0 60px rgba(255, 179, 0, 0.7), 0 0 120px rgba(255, 152, 0, 0.3); }
-      50%      { box-shadow: 0 0 90px rgba(255, 179, 0, 0.9), 0 0 160px rgba(255, 152, 0, 0.5); }
+      0%,100%{box-shadow:0 0 60px rgba(255,179,0,0.7),0 0 120px rgba(255,152,0,0.3)}
+      50%{box-shadow:0 0 90px rgba(255,179,0,0.9),0 0 160px rgba(255,152,0,0.5)}
     }
-
-    .orbit-track {
-      position: absolute;
-      top: 50%; left: 50%;
-      border-radius: 50%;
-      border: 1px dashed;
-      opacity: 0.15;
-      pointer-events: none;
-    }
-
-    .orbit-item {
-      position: absolute;
-      top: 50%; left: 50%;
-      /* Planet sits at radius distance from center */
-      transform-origin: 0 0;
-    }
-
+    .orbit-track { position: absolute; top: 50%; left: 50%; border-radius: 50%; border: 1px dashed; opacity: 0.15; pointer-events: none; }
+    .orbit-item { position: absolute; top: 50%; left: 50%; transform-origin: 0 0; }
     .planet-wrapper {
-      position: absolute;
-      /* Offset so planet is at orbit edge */
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      transition: filter 0.2s;
-      /* Counter-rotate name to keep it upright */
+      position: absolute; display: flex; flex-direction: column; align-items: center;
+      cursor: pointer; transition: filter 0.2s, opacity 0.3s;
     }
-
-    .planet-wrapper:hover {
-      filter: brightness(1.3);
+    .planet-wrapper.conquered { opacity: 0.3; pointer-events: none; filter: grayscale(0.8); }
+    .planet-wrapper.conquered::after {
+      content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-80%);
+      font-size: 2rem; color: #4dff6b; z-index: 5; text-shadow: 0 0 20px #4dff6b;
     }
-
-    .planet-wrapper .planet-sphere {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 0 30px var(--glow-color), 0 0 60px var(--glow-color);
-      transition: box-shadow 0.3s;
+    .planet-wrapper:hover { filter: brightness(1.3); }
+    .planet-wrapper.conquered:hover { filter: grayscale(0.8); }
+    .planet-sphere {
+      width: 90px; height: 90px; border-radius: 50%; position: relative; overflow: hidden;
+      box-shadow: 0 0 30px var(--glow-color), 0 0 60px var(--glow-color); transition: box-shadow 0.3s;
     }
-
-    .planet-wrapper .planet-name {
-      margin-top: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-      text-transform: uppercase;
-      text-shadow: 0 0 10px var(--planet-color);
+    .planet-wrapper:hover .planet-sphere { box-shadow: 0 0 50px var(--glow-color), 0 0 90px var(--glow-color); }
+    .planet-name {
+      margin-top: 0.5rem; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em;
+      white-space: nowrap; text-transform: uppercase; text-shadow: 0 0 10px var(--planet-color);
     }
-
-    .planet-wrapper:hover .planet-sphere {
-      box-shadow: 0 0 50px var(--glow-color), 0 0 90px var(--glow-color);
-    }
-
-    /* ── Atmospheric glow ring ── */
     .planet-atmosphere {
-      position: absolute;
-      top: -6px; left: -6px;
-      right: -6px; bottom: -6px;
-      border-radius: 50%;
-      opacity: 0.35;
-      pointer-events: none;
+      position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px;
+      border-radius: 50%; opacity: 0.35; pointer-events: none;
     }
-
-    /* ── Surface band for gas giants ── */
-    .planet-band {
-      position: absolute;
-      left: -10%;
-      right: -10%;
-      height: 18%;
-      border-radius: 50%;
-      opacity: 0.3;
-    }
-
-    .planet-band.b1 { top: 12%; }
-    .planet-band.b2 { top: 30%; }
-    .planet-band.b3 { top: 48%; }
-    .planet-band.b4 { top: 66%; }
-
-    /* ── Specular highlight ── */
+    .planet-band { position: absolute; left: -10%; right: -10%; height: 18%; border-radius: 50%; opacity: 0.3; }
+    .planet-band.b1{top:12%}.planet-band.b2{top:30%}.planet-band.b3{top:48%}.planet-band.b4{top:66%}
     .planet-specular {
-      position: absolute;
-      top: 12%; left: 18%;
-      width: 28%; height: 28%;
-      border-radius: 50%;
-      background: radial-gradient(ellipse, rgba(255,255,255,0.5) 0%, transparent 70%);
-      pointer-events: none;
+      position: absolute; top: 12%; left: 18%; width: 28%; height: 28%; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(255,255,255,0.5) 0%, transparent 70%); pointer-events: none;
     }
-
-    /* ── Crater (for rocky planets) ── */
-    .planet-crater {
-      position: absolute;
-      border-radius: 50%;
-      pointer-events: none;
-    }
-
-    .planet-crater::after {
-      content: '';
-      position: absolute;
-      top: 2px; left: 2px;
-      right: 2px; bottom: 2px;
-      border-radius: 50%;
-    }
-
-    /* ── RED: Rocky / Mars-like planet ── */
-    .planet-red {
-      background: radial-gradient(circle at 35% 30%, #ff9999, #e04040 35%, #991111 70%, #4a0000);
-    }
-    .planet-red .planet-atmosphere { box-shadow: inset 0 0 20px rgba(255,100,80,0.6); }
-    .planet-red .planet-crater.c1 { top: 55%; left: 60%; width: 22%; height: 22%; background: rgba(120,10,10,0.35); box-shadow: inset 0 1px 1px rgba(255,150,150,0.3); }
-    .planet-red .planet-crater.c2 { top: 20%; left: 15%; width: 14%; height: 14%; background: rgba(100,10,10,0.3); }
-    .planet-red .planet-crater.c3 { top: 40%; left: 70%; width: 10%; height: 10%; background: rgba(150,20,20,0.25); }
-
-    /* ── PURPLE: Gas giant with bands ── */
-    .planet-purple {
-      background: radial-gradient(circle at 35% 30%, #e0c0ff, #9944dd 30%, #551199 60%, #2a0055);
-    }
-    .planet-purple .planet-atmosphere { box-shadow: inset 0 0 20px rgba(180,100,255,0.5); }
-    .planet-purple .planet-band.b1 { background: rgba(200,160,255,0.3); }
-    .planet-purple .planet-band.b2 { background: rgba(140,60,220,0.35); }
-    .planet-purple .planet-band.b3 { background: rgba(220,180,255,0.25); }
-    .planet-purple .planet-band.b4 { background: rgba(100,40,180,0.3); }
-
-    /* ── GREEN: Earth-like with clouds ── */
-    .planet-green {
-      background: radial-gradient(circle at 35% 30%, #99ffcc, #22aa55 35%, #116633 65%, #053311);
-    }
-    .planet-green .planet-atmosphere { box-shadow: inset 0 0 22px rgba(100,255,180,0.5); }
-    .planet-green .planet-band.b1 { background: rgba(180,255,220,0.3); width: 22%; height: 12%; top: 20%; left: -5%; }
-    .planet-green .planet-band.b2 { background: rgba(140,240,200,0.25); width: 35%; height: 10%; top: 42%; left: 8%; }
-    .planet-green .planet-band.b3 { background: rgba(160,255,210,0.2); width: 18%; height: 8%; top: 62%; left: 25%; }
-
-    /* ── BLUE: Ice giant with deep atmosphere ── */
-    .planet-blue {
-      background: radial-gradient(circle at 35% 30%, #aaddff, #3377cc 35%, #113388 65%, #051144);
-    }
-    .planet-blue .planet-atmosphere { box-shadow: inset 0 0 22px rgba(120,180,255,0.55); }
-    .planet-blue .planet-band.b1 { background: rgba(150,210,255,0.35); }
-    .planet-blue .planet-band.b2 { background: rgba(60,120,220,0.3); }
-    .planet-blue .planet-band.b3 { background: rgba(180,220,255,0.25); }
-
-    /* ── Planet ring (Saturn-style) ── */
+    .planet-crater { position: absolute; border-radius: 50%; pointer-events: none; }
+    .planet-crater::after { content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px; border-radius: 50%; }
+    .planet-red{background:radial-gradient(circle at 35% 30%,#ff9999,#e04040 35%,#991111 70%,#4a0000)}
+    .planet-red .planet-atmosphere{box-shadow:inset 0 0 20px rgba(255,100,80,0.6)}
+    .planet-red .planet-crater.c1{top:55%;left:60%;width:22%;height:22%;background:rgba(120,10,10,0.35);box-shadow:inset 0 1px 1px rgba(255,150,150,0.3)}
+    .planet-red .planet-crater.c2{top:20%;left:15%;width:14%;height:14%;background:rgba(100,10,10,0.3)}
+    .planet-red .planet-crater.c3{top:40%;left:70%;width:10%;height:10%;background:rgba(150,20,20,0.25)}
+    .planet-purple{background:radial-gradient(circle at 35% 30%,#e0c0ff,#9944dd 30%,#551199 60%,#2a0055)}
+    .planet-purple .planet-atmosphere{box-shadow:inset 0 0 20px rgba(180,100,255,0.5)}
+    .planet-purple .planet-band.b1{background:rgba(200,160,255,0.3)}.planet-purple .planet-band.b2{background:rgba(140,60,220,0.35)}
+    .planet-purple .planet-band.b3{background:rgba(220,180,255,0.25)}.planet-purple .planet-band.b4{background:rgba(100,40,180,0.3)}
+    .planet-green{background:radial-gradient(circle at 35% 30%,#99ffcc,#22aa55 35%,#116633 65%,#053311)}
+    .planet-green .planet-atmosphere{box-shadow:inset 0 0 22px rgba(100,255,180,0.5)}
+    .planet-green .planet-band.b1{background:rgba(180,255,220,0.3);width:22%;height:12%;top:20%;left:-5%}
+    .planet-green .planet-band.b2{background:rgba(140,240,200,0.25);width:35%;height:10%;top:42%;left:8%}
+    .planet-green .planet-band.b3{background:rgba(160,255,210,0.2);width:18%;height:8%;top:62%;left:25%}
+    .planet-blue{background:radial-gradient(circle at 35% 30%,#aaddff,#3377cc 35%,#113388 65%,#051144)}
+    .planet-blue .planet-atmosphere{box-shadow:inset 0 0 22px rgba(120,180,255,0.55)}
+    .planet-blue .planet-band.b1{background:rgba(150,210,255,0.35)}.planet-blue .planet-band.b2{background:rgba(60,120,220,0.3)}
+    .planet-blue .planet-band.b3{background:rgba(180,220,255,0.25)}
     .planet-ring {
-      position: absolute;
-      border-radius: 50%;
-      border: 3px solid;
-      opacity: 0.3;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotateX(75deg);
-      pointer-events: none;
+      position: absolute; border-radius: 50%; border: 3px solid; opacity: 0.3;
+      top: 50%; left: 50%; transform: translate(-50%,-50%) rotateX(75deg); pointer-events: none;
     }
-
     .map-back-btn {
-      margin-top: 3rem;
-      background: transparent;
-      color: var(--text-dim);
-      border: 1px solid var(--border);
-      padding: 0.7rem 2rem;
-      border-radius: 50px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.95rem;
-      transition: all var(--transition);
+      margin-top: 3rem; background: transparent; color: var(--text-dim);
+      border: 1px solid var(--border); padding: 0.7rem 2rem; border-radius: 50px;
+      cursor: pointer; font-family: inherit; font-size: 0.95rem; transition: all var(--transition);
     }
+    .map-back-btn:hover { border-color: var(--text-dim); color: var(--text); }
 
-    .map-back-btn:hover {
-      border-color: var(--text-dim);
-      color: var(--text);
+    /* ═══ SCREEN 3: Maze Game ═══ */
+    #screenGame { padding: 1rem; }
+    .game-hud {
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%; max-width: 800px; margin-bottom: 0.8rem;
     }
-
-    /* ── Stars background ── */
-    .stars {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      z-index: -1;
+    .game-hud .lives { font-size: 1.3rem; }
+    .game-hud .planet-label { font-weight: 700; font-size: 1.1rem; }
+    .game-hud .cups-collected { font-size: 0.9rem; color: var(--text-dim); }
+    .game-hud .btn-leave { padding: 0.4rem 1.2rem; font-size: 0.85rem; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: 50px; cursor: pointer; font-family: inherit; }
+    .game-hud .btn-leave:hover { border-color: #ff4d6a; color: #ff4d6a; }
+    .game-canvas-wrap {
+      position: relative; border: 2px solid var(--border); border-radius: 12px; overflow: hidden;
+      box-shadow: 0 0 40px rgba(0,0,0,0.5);
     }
+    #gameCanvas { display: block; background: #0a0a1a; }
+    .game-msg {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 2rem; font-weight: 800; text-align: center; pointer-events: none;
+      text-shadow: 0 0 30px rgba(255,255,255,0.5);
+      opacity: 0; transition: opacity 0.5s;
+    }
+    .game-msg.show { opacity: 1; }
+    .game-controls { margin-top: 0.8rem; color: var(--text-dim); font-size: 0.8rem; }
 
+    /* ═══ SCREEN 4: Win Screen ═══ */
+    .win-container { text-align: center; max-width: 700px; }
+    .win-container h1 {
+      font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #ffd700, #ffaa00, #ffd700);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: winShine 2s ease-in-out infinite;
+    }
+    @keyframes winShine {
+      0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}
+    }
+    .win-character {
+      width: 200px; height: 200px; border-radius: 50%; object-fit: cover;
+      border: 4px solid gold; box-shadow: 0 0 60px rgba(255,215,0,0.5);
+      margin: 1.5rem 0;
+    }
+    .win-cups {
+      display: flex; gap: 2rem; justify-content: center; margin: 1.5rem 0;
+    }
+    .win-cup {
+      width: 60px; height: 70px; position: relative;
+      display: flex; flex-direction: column; align-items: center;
+      animation: cupFloat 1.5s ease-in-out infinite;
+    }
+    .win-cup:nth-child(2) { animation-delay: 0.3s; }
+    .win-cup:nth-child(3) { animation-delay: 0.6s; }
+    @keyframes cupFloat {
+      0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}
+    }
+    .win-cup .cup-body {
+      width: 40px; height: 35px; border-radius: 0 0 20px 20px;
+      position: relative; box-shadow: 0 4px 15px var(--cup-glow);
+    }
+    .win-cup .cup-body::before {
+      content: ''; position: absolute; top: -10px; left: -8px; right: -8px;
+      height: 16px; border-radius: 10px 10px 0 0; background: inherit; opacity: 0.7;
+    }
+    .win-cup .cup-stem {
+      width: 8px; height: 14px; background: #ccc;
+    }
+    .win-cup .cup-base {
+      width: 28px; height: 6px; border-radius: 3px; background: #ccc;
+    }
+    .win-text { color: var(--text-dim); font-size: 1.2rem; margin: 1rem 0; }
+
+    /* ═══ Stars ═══ */
+    .stars { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: -1; }
     .star {
-      position: absolute;
-      border-radius: 50%;
-      background: white;
-      animation: twinkle var(--dur) ease-in-out infinite;
-      animation-delay: var(--delay);
-      opacity: 0;
+      position: absolute; border-radius: 50%; background: white;
+      animation: twinkle var(--dur) ease-in-out infinite; animation-delay: var(--delay); opacity: 0;
     }
-
-    @keyframes twinkle {
-      0%, 100% { opacity: 0.2; }
-      50% { opacity: 0.9; }
-    }
-
-    /* ── Footer ── */
-    .footer {
-      margin-top: 3rem;
-      color: var(--text-dim);
-      font-size: 0.8rem;
-      text-align: center;
-    }
+    @keyframes twinkle { 0%,100%{opacity:0.2}50%{opacity:0.9} }
+    .footer { margin-top: 3rem; color: var(--text-dim); font-size: 0.8rem; text-align: center; }
   </style>
 </head>
 <body>
 
-  <!-- ── Stars background ── -->
-  <div class="stars" id="stars"></div>
+<div class="stars" id="stars"></div>
 
-  <!-- ═══════════════════════════════════════════
-       SCREEN 1: Character Selection
-       ═══════════════════════════════════════════ -->
-  <div class="screen active" id="screenSelect">
-    <div class="header">
-      <h1>Choose Your Character</h1>
-      <p>Select one to begin the adventure</p>
-    </div>
-
-    <div class="character-grid" id="characterGrid"></div>
-
-    <p class="selected-info" id="selectedInfo"></p>
-
-    <div style="text-align:center">
-      <button class="btn btn-primary" id="btnStart" disabled onclick="startGame()">Start Game</button>
-      <button class="btn btn-secondary" id="btnReset">Reset</button>
-    </div>
-
-    <p class="footer">&copy; House's Game</p>
+<!-- ══════ SCREEN 1: Character Selection ══════ -->
+<div class="screen active" id="screenSelect">
+  <div class="header">
+    <h1>Choose Your Character</h1>
+    <p>Select one to begin the adventure</p>
   </div>
-
-  <!-- ═══════════════════════════════════════════
-       SCREEN 2: Planet Map
-       ═══════════════════════════════════════════ -->
-  <div class="screen" id="screenMap">
-    <div class="map-header">
-      <div class="player-badge" id="playerBadge"></div>
-      <h1>Select a Planet to Invade</h1>
-      <div class="subtitle">Click an orbiting planet to attack</div>
-    </div>
-
-    <div class="orbit-scene" id="orbitScene"></div>
-
-    <button class="map-back-btn" id="btnBack">← Back to Character Select</button>
-    <p class="footer" style="margin-top:1rem">&copy; House's Game</p>
+  <div class="character-grid" id="characterGrid"></div>
+  <p class="selected-info" id="selectedInfo"></p>
+  <div style="text-align:center">
+    <button class="btn btn-primary" id="btnStart" disabled onclick="startGame()">Start Game</button>
+    <button class="btn btn-secondary" id="btnReset">Reset</button>
   </div>
+  <p class="footer">&copy; House's Game</p>
+</div>
 
-  <script>
-    (function() {
-      // ── Character data with colors ──
-      const characters = [
-        { id: 1, name: 'Speedster', src: 'assets/character-1.jpg', color: '#ff4d4d', colorName: 'red'    },
-        { id: 2, name: 'Hipster',    src: 'assets/character-2.jpg', color: '#b44dff', colorName: 'purple' },
-        { id: 3, name: 'Engineer',   src: 'assets/character-3.jpg', color: '#4dff6b', colorName: 'green'  },
-        { id: 4, name: 'Shadow',     src: 'assets/character-4.jpg', color: '#4d8bff', colorName: 'blue'   },
-      ];
+<!-- ══════ SCREEN 2: Planet Map ══════ -->
+<div class="screen" id="screenMap">
+  <div class="map-header">
+    <div class="player-badge" id="playerBadge"></div>
+    <h1>Select a Planet to Invade</h1>
+    <div class="subtitle" id="mapSubtitle">Click an orbiting planet to attack</div>
+  </div>
+  <div class="orbit-scene" id="orbitScene"></div>
+  <button class="map-back-btn" id="btnBack">← Back to Character Select</button>
+  <p class="footer" style="margin-top:1rem">&copy; House's Game</p>
+</div>
 
-      const STORAGE_KEY = 'housesgame_selected_character';
-      let selectedId = null;
+<!-- ══════ SCREEN 3: Maze Game ══════ -->
+<div class="screen" id="screenGame">
+  <div class="game-hud">
+    <span class="lives" id="gameLives">❤️❤️❤️</span>
+    <span class="planet-label" id="gamePlanetLabel"></span>
+    <span class="cups-collected" id="gameCupsLabel"></span>
+    <button class="btn-leave" id="btnLeave">✕ Leave</button>
+  </div>
+  <div class="game-canvas-wrap">
+    <canvas id="gameCanvas"></canvas>
+    <div class="game-msg" id="gameMsg"></div>
+  </div>
+  <div class="game-controls">Use W A S D or Arrow Keys to move • Avoid enemies • Reach the cup!</div>
+</div>
 
-      // ── DOM refs ──
-      const screenSelect = document.getElementById('screenSelect');
-      const screenMap    = document.getElementById('screenMap');
-      const grid         = document.getElementById('characterGrid');
-      const btnStart     = document.getElementById('btnStart');
-      const btnReset     = document.getElementById('btnReset');
-      const selectedInfo = document.getElementById('selectedInfo');
-      const orbitScene   = document.getElementById('orbitScene');
-      const playerBadge  = document.getElementById('playerBadge');
-      const btnBack      = document.getElementById('btnBack');
+<!-- ══════ SCREEN 4: Win ══════ -->
+<div class="screen" id="screenWin">
+  <div class="win-container">
+    <h1>🏆 Victory!</h1>
+    <p style="color:var(--text-dim)">All planets conquered!</p>
+    <img class="win-character" id="winCharacterImg" alt="Your character">
+    <div class="win-cups" id="winCups"></div>
+    <p class="win-text" id="winText"></p>
+    <button class="btn btn-primary" id="btnPlayAgain">Play Again</button>
+  </div>
+  <p class="footer">&copy; House's Game</p>
+</div>
 
-      // ── Stars ──
-      const starsEl = document.getElementById('stars');
-      for (let i = 0; i < 120; i++) {
-        const s = document.createElement('div');
-        s.className = 'star';
-        s.style.left = Math.random() * 100 + '%';
-        s.style.top  = Math.random() * 100 + '%';
-        const size = Math.random() * 2.5 + 1;
-        s.style.width  = size + 'px';
-        s.style.height = size + 'px';
-        s.style.setProperty('--dur', (Math.random() * 3 + 2) + 's');
-        s.style.setProperty('--delay', Math.random() * 5 + 's');
-        starsEl.appendChild(s);
+<!-- ══════ Background Music ══════ -->
+<audio id="bgMusic" loop preload="auto" src="assets/galactic-velocity-rush.mp3"></audio>
+
+<script>
+(function() {
+  const characters = [
+    { id:1, name:'Speedster', src:'assets/character-1.jpg', color:'#ff4d4d', colorName:'red'    },
+    { id:2, name:'Hipster',    src:'assets/character-2.jpg', color:'#b44dff', colorName:'purple' },
+    { id:3, name:'Engineer',   src:'assets/character-3.jpg', color:'#4dff6b', colorName:'green'  },
+    { id:4, name:'Shadow',     src:'assets/character-4.jpg', color:'#4d8bff', colorName:'blue'   },
+  ];
+  const CHAR_KEY = 'housesgame_selected_character';
+  const CUPS_KEY = 'housesgame_cups';
+  let selectedId = null;
+  let conqueredCups = []; // array of character ids whose cups we've collected
+  let orbitAnimId = null;
+  let gameAnimId = null;
+  let bgMusic = document.getElementById('bgMusic');
+
+  // ── DOM refs ──
+  const screens = {
+    select: document.getElementById('screenSelect'),
+    map:    document.getElementById('screenMap'),
+    game:   document.getElementById('screenGame'),
+    win:    document.getElementById('screenWin'),
+  };
+  const grid       = document.getElementById('characterGrid');
+  const btnStart   = document.getElementById('btnStart');
+  const btnReset   = document.getElementById('btnReset');
+  const selectedInfo = document.getElementById('selectedInfo');
+  const orbitScene = document.getElementById('orbitScene');
+  const playerBadge= document.getElementById('playerBadge');
+  const mapSubtitle= document.getElementById('mapSubtitle');
+  const btnBack    = document.getElementById('btnBack');
+  const btnLeave   = document.getElementById('btnLeave');
+  const gameCanvas = document.getElementById('gameCanvas');
+  const gameMsg    = document.getElementById('gameMsg');
+  const gameLives  = document.getElementById('gameLives');
+  const gamePlanetLabel = document.getElementById('gamePlanetLabel');
+  const gameCupsLabel   = document.getElementById('gameCupsLabel');
+  const screenWin  = document.getElementById('screenWin');
+  const winCharImg = document.getElementById('winCharacterImg');
+  const winCupsDiv = document.getElementById('winCups');
+  const winText    = document.getElementById('winText');
+  const btnPlayAgain = document.getElementById('btnPlayAgain');
+
+  // ── Stars ──
+  const starsEl = document.getElementById('stars');
+  for (let i=0;i<120;i++) {
+    const s=document.createElement('div'); s.className='star';
+    s.style.left=Math.random()*100+'%'; s.style.top=Math.random()*100+'%';
+    const sz=Math.random()*2.5+1; s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.setProperty('--dur',(Math.random()*3+2)+'s');
+    s.style.setProperty('--delay',Math.random()*5+'s');
+    starsEl.appendChild(s);
+  }
+
+  // ── Load saved state ──
+  function loadCups() {
+    try { conqueredCups = JSON.parse(localStorage.getItem(CUPS_KEY)) || []; }
+    catch(e) { conqueredCups = []; }
+  }
+  loadCups();
+
+  // ── Screen switching ──
+  function showScreen(name) {
+    Object.entries(screens).forEach(([k,v]) => v.classList.toggle('active', k===name));
+    if (name==='game') startMusic();
+  }
+
+  // ── Music ──
+  function startMusic() {
+    bgMusic.volume = 0.3;
+    bgMusic.play().catch(()=>{});
+  }
+  // Try to start music on first user interaction
+  document.addEventListener('click', ()=>{ bgMusic.play().catch(()=>{}); }, {once:true});
+
+  // ── Build character cards ──
+  characters.forEach(ch => {
+    const card = document.createElement('div');
+    card.className = 'character-card'; card.tabIndex = 0;
+    card.setAttribute('role','radio'); card.setAttribute('aria-checked','false');
+    card.dataset.id = ch.id;
+    const img = document.createElement('img'); img.src=ch.src; img.alt=ch.name; img.loading='lazy';
+    const label = document.createElement('div'); label.className='character-label'; label.textContent=ch.name;
+    card.appendChild(img); card.appendChild(label);
+    card.addEventListener('click', ()=>selectCharacter(ch.id));
+    card.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();selectCharacter(ch.id);} });
+    grid.appendChild(card);
+  });
+
+  function selectCharacter(id) {
+    selectedId = id;
+    document.querySelectorAll('.character-card').forEach(c=>{
+      const sel = +c.dataset.id===id;
+      c.classList.toggle('selected', sel);
+      c.setAttribute('aria-checked', sel);
+    });
+    localStorage.setItem(CHAR_KEY, id);
+    selectedInfo.textContent = 'Selected: ' + characters.find(c=>c.id===id).name;
+    btnStart.disabled = false;
+  }
+
+  function clearSelection() {
+    selectedId = null; localStorage.removeItem(CHAR_KEY);
+    document.querySelectorAll('.character-card').forEach(c=>{c.classList.remove('selected');c.setAttribute('aria-checked','false');});
+    selectedInfo.textContent=''; btnStart.disabled=true;
+    conqueredCups = []; localStorage.removeItem(CUPS_KEY);
+  }
+
+  // ═══════════════════════════════════════════
+  //  ORBIT MAP
+  // ═══════════════════════════════════════════
+  function buildMap(playerCh) {
+    if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
+    orbitScene.innerHTML = '';
+    loadCups(); // refresh conquered list
+
+    const remaining = characters.filter(c => c.id !== playerCh.id && !conqueredCups.includes(c.id));
+    const allEnemies = characters.filter(c => c.id !== playerCh.id);
+
+    playerBadge.textContent = '⚔ You: ' + playerCh.name;
+    playerBadge.style.background = playerCh.color+'22';
+    playerBadge.style.color = playerCh.color;
+    playerBadge.style.border = '1px solid '+playerCh.color+'44';
+
+    if (remaining.length === 0) {
+      mapSubtitle.textContent = 'All planets conquered!';
+      showWinScreen(playerCh);
+      return false;
+    }
+
+    mapSubtitle.textContent = remaining.length + ' planet'+(remaining.length>1?'s':'')+' remaining';
+
+    // Sun
+    const sun = document.createElement('div'); sun.className='orbit-center'; orbitScene.appendChild(sun);
+
+    // Orbit tracks
+    const radii = [220, 170, 120];
+    radii.forEach(r=>{
+      const t=document.createElement('div'); t.className='orbit-track';
+      t.style.width=r*2+'px'; t.style.height=r*2+'px';
+      t.style.marginLeft=-r+'px'; t.style.marginTop=-r+'px';
+      t.style.borderColor=playerCh.color+'44'; orbitScene.appendChild(t);
+    });
+
+    const planetData = allEnemies.map((enemy,i)=>{
+      const item=document.createElement('div'); item.className='orbit-item';
+      const wrapper=document.createElement('div'); wrapper.className='planet-wrapper';
+      const hp=45; wrapper.style.left=(radii[i]-hp)+'px'; wrapper.style.top='-'+hp+'px';
+      if (conqueredCups.includes(enemy.id)) wrapper.classList.add('conquered');
+
+      const sphere=document.createElement('div');
+      sphere.className='planet-sphere planet-'+enemy.colorName;
+      sphere.style.setProperty('--glow-color',enemy.color+'66');
+      sphere.style.setProperty('--planet-color',enemy.color);
+
+      const atmos=document.createElement('div'); atmos.className='planet-atmosphere'; sphere.appendChild(atmos);
+      const spec=document.createElement('div'); spec.className='planet-specular'; sphere.appendChild(spec);
+
+      if (enemy.colorName==='red') {
+        for (let ci=1;ci<=3;ci++){const cr=document.createElement('div');cr.className='planet-crater c'+ci;sphere.appendChild(cr);}
+      } else if (enemy.colorName==='purple') {
+        for (let bi=1;bi<=4;bi++){const b=document.createElement('div');b.className='planet-band b'+bi;sphere.appendChild(b);}
+      } else if (enemy.colorName==='green') {
+        for (let bi=1;bi<=3;bi++){const b=document.createElement('div');b.className='planet-band b'+bi;sphere.appendChild(b);}
+      } else {
+        for (let bi=1;bi<=3;bi++){const b=document.createElement('div');b.className='planet-band b'+bi;sphere.appendChild(b);}
       }
 
-      // ── Build character cards ──
-      characters.forEach(ch => {
-        const card = document.createElement('div');
-        card.className = 'character-card';
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('role', 'radio');
-        card.setAttribute('aria-checked', 'false');
-        card.dataset.id = ch.id;
+      const ring=document.createElement('div'); ring.className='planet-ring';
+      ring.style.borderColor=enemy.color; ring.style.width='130px'; ring.style.height='32px';
+      sphere.appendChild(ring);
 
-        const img = document.createElement('img');
-        img.src = ch.src;
-        img.alt = ch.name;
-        img.loading = 'lazy';
+      const name=document.createElement('div'); name.className='planet-name';
+      name.style.setProperty('--planet-color',enemy.color); name.textContent=enemy.name;
 
-        const label = document.createElement('div');
-        label.className = 'character-label';
-        label.textContent = ch.name;
+      wrapper.appendChild(sphere); wrapper.appendChild(name); item.appendChild(wrapper);
+      orbitScene.appendChild(item);
 
-        card.appendChild(img);
-        card.appendChild(label);
-
-        card.addEventListener('click', () => selectCharacter(ch.id));
-        card.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            selectCharacter(ch.id);
-          }
-        });
-
-        grid.appendChild(card);
+      wrapper.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        if (conqueredCups.includes(enemy.id)) return;
+        startMaze(playerCh, enemy);
       });
 
-      function selectCharacter(id) {
-        selectedId = id;
-        document.querySelectorAll('.character-card').forEach(c => {
-          const isSelected = +c.dataset.id === id;
-          c.classList.toggle('selected', isSelected);
-          c.setAttribute('aria-checked', isSelected);
-        });
-        localStorage.setItem(STORAGE_KEY, id);
-        const ch = characters.find(c => c.id === id);
-        selectedInfo.textContent = 'Selected: ' + ch.name;
-        btnStart.disabled = false;
-      }
+      return {item, wrapper, radius:radii[i], speed:[0.003,0.005,0.007][i], angle:(i*Math.PI*2)/3, enemy};
+    });
 
-      function clearSelection() {
-        selectedId = null;
-        localStorage.removeItem(STORAGE_KEY);
-        document.querySelectorAll('.character-card').forEach(c => {
-          c.classList.remove('selected');
-          c.setAttribute('aria-checked', 'false');
-        });
-        selectedInfo.textContent = '';
-        btnStart.disabled = true;
-      }
+    let lastTime=0;
+    function animate(ts){
+      if(!lastTime)lastTime=ts;
+      const dt=Math.min((ts-lastTime)/1000,0.1); lastTime=ts;
+      planetData.forEach(p=>{
+        p.angle+=p.speed*(dt*60);
+        const deg=p.angle*(180/Math.PI);
+        p.item.style.transform='rotate('+deg+'deg)';
+        p.wrapper.style.transform='rotate('+(-deg)+'deg)';
+      });
+      orbitAnimId=requestAnimationFrame(animate);
+    }
+    orbitAnimId=requestAnimationFrame(animate);
+    return true;
+  }
 
-      // ── Switch screens ──
-      function showScreen(name) {
-        screenSelect.classList.toggle('active', name === 'select');
-        screenMap.classList.toggle('active', name === 'map');
-      }
+  // ═══════════════════════════════════════════
+  //  MAZE GAME
+  // ═══════════════════════════════════════════
+  let mazeState = null;
 
-      // ── Orbit animation state ──
-      let orbitAnimId = null;
+  function generateMaze(cols, rows) {
+    // Grid: 0=path, 1=wall
+    const grid = [];
+    for (let r=0;r<rows;r++) { grid[r]=[]; for (let c=0;c<cols;c++) grid[r][c]=1; }
 
-      // ── Build orbit map ──
-      function buildMap(playerCh) {
-        // Stop any running animation
-        if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
-        orbitScene.innerHTML = '';
+    // Recursive backtracking
+    const stack = [];
+    const startR = 1, startC = 1;
+    grid[startR][startC] = 0;
+    stack.push([startR, startC]);
 
-        // Player badge
-        playerBadge.textContent = '⚔ You: ' + playerCh.name;
-        playerBadge.style.background = playerCh.color + '22';
-        playerBadge.style.color = playerCh.color;
-        playerBadge.style.border = '1px solid ' + playerCh.color + '44';
+    const dirs = [[0,2],[2,0],[0,-2],[-2,0]];
 
-        // Central sun
-        const sun = document.createElement('div');
-        sun.className = 'orbit-center';
-        orbitScene.appendChild(sun);
+    while (stack.length > 0) {
+      const [cr, cc] = stack[stack.length-1];
+      const shuffled = dirs.sort(()=>Math.random()-0.5);
+      let carved = false;
 
-        // Enemy planets
-        const enemies = characters.filter(c => c.id !== playerCh.id);
-        const radii = [220, 170, 120]; // px from center
-        const speeds = [0.003, 0.005, 0.007]; // radians per frame
-        const sceneW = 600, sceneH = 600;
-
-        // Orbit track rings
-        radii.forEach(r => {
-          const track = document.createElement('div');
-          track.className = 'orbit-track';
-          const d = r * 2;
-          track.style.width  = d + 'px';
-          track.style.height = d + 'px';
-          track.style.marginLeft = -r + 'px';
-          track.style.marginTop  = -r + 'px';
-          track.style.borderColor = playerCh.color + '44';
-          orbitScene.appendChild(track);
-        });
-
-        const planetData = enemies.map((enemy, i) => {
-          // Orbit item (will rotate)
-          const item = document.createElement('div');
-          item.className = 'orbit-item';
-
-          // Planet wrapper (counter-rotates to keep name upright, sits at orbit edge)
-          const wrapper = document.createElement('div');
-          wrapper.className = 'planet-wrapper';
-          const halfPlanet = 45;
-          wrapper.style.left = (radii[i] - halfPlanet) + 'px';
-          wrapper.style.top  = '-' + halfPlanet + 'px';
-
-          const sphere = document.createElement('div');
-          sphere.className = 'planet-sphere planet-' + enemy.colorName;
-          sphere.style.setProperty('--glow-color', enemy.color + '66');
-          sphere.style.setProperty('--planet-color', enemy.color);
-
-          // Atmosphere glow
-          const atmos = document.createElement('div');
-          atmos.className = 'planet-atmosphere';
-          sphere.appendChild(atmos);
-
-          // Specular highlight
-          const spec = document.createElement('div');
-          spec.className = 'planet-specular';
-          sphere.appendChild(spec);
-
-          // Surface details by color
-          if (enemy.colorName === 'red') {
-            // Rocky planet with craters
-            for (let ci = 1; ci <= 3; ci++) {
-              const crater = document.createElement('div');
-              crater.className = 'planet-crater c' + ci;
-              sphere.appendChild(crater);
-            }
-          } else if (enemy.colorName === 'purple') {
-            // Gas giant with bands
-            for (let bi = 1; bi <= 4; bi++) {
-              const band = document.createElement('div');
-              band.className = 'planet-band b' + bi;
-              sphere.appendChild(band);
-            }
-          } else if (enemy.colorName === 'green') {
-            // Earth-like with cloud patches
-            for (let bi = 1; bi <= 3; bi++) {
-              const band = document.createElement('div');
-              band.className = 'planet-band b' + bi;
-              sphere.appendChild(band);
-            }
-          } else if (enemy.colorName === 'blue') {
-            // Ice giant with bands
-            for (let bi = 1; bi <= 3; bi++) {
-              const band = document.createElement('div');
-              band.className = 'planet-band b' + bi;
-              sphere.appendChild(band);
-            }
-          }
-
-          // Saturn-style ring
-          const ring = document.createElement('div');
-          ring.className = 'planet-ring';
-          ring.style.borderColor = enemy.color;
-          ring.style.width  = '130px';
-          ring.style.height = '32px';
-          sphere.appendChild(ring);
-
-          const name = document.createElement('div');
-          name.className = 'planet-name';
-          name.style.setProperty('--planet-color', enemy.color);
-          name.textContent = enemy.name;
-
-          wrapper.appendChild(sphere);
-          wrapper.appendChild(name);
-          item.appendChild(wrapper);
-          orbitScene.appendChild(item);
-
-          // Click handler on wrapper
-          wrapper.addEventListener('click', (e) => {
-            e.stopPropagation();
-            alert('Invading ' + enemy.name + "'s planet!\n\nPlanet gameplay coming soon...");
-          });
-
-          return { item, wrapper, radius: radii[i], speed: speeds[i], angle: (i * Math.PI * 2) / 3, enemy };
-        });
-
-        // Animation loop
-        let lastTime = 0;
-        function animate(timestamp) {
-          if (!lastTime) lastTime = timestamp;
-          const dt = Math.min((timestamp - lastTime) / 1000, 0.1); // cap dt
-          lastTime = timestamp;
-
-          planetData.forEach(p => {
-            p.angle += p.speed * (dt * 60); // normalize speed
-            const deg = p.angle * (180 / Math.PI);
-            p.item.style.transform = 'rotate(' + deg + 'deg)';
-            // Counter-rotate wrapper to keep text upright
-            p.wrapper.style.transform = 'rotate(' + (-deg) + 'deg)';
-          });
-
-          orbitAnimId = requestAnimationFrame(animate);
+      for (const [dr, dc] of shuffled) {
+        const nr = cr+dr, nc = cc+dc;
+        const mr = cr+dr/2, mc = cc+dc/2;
+        if (nr>0 && nr<rows-1 && nc>0 && nc<cols-1 && grid[nr][nc]===1) {
+          grid[nr][nc]=0; grid[mr][mc]=0;
+          stack.push([nr, nc]);
+          carved=true; break;
         }
-        orbitAnimId = requestAnimationFrame(animate);
       }
+      if (!carved) stack.pop();
+    }
 
-      // ── Start Game → Show map ──
-      function startGame() {
-        if (!selectedId) return;
-        const playerCh = characters.find(c => c.id === selectedId);
-        buildMap(playerCh);
-        showScreen('map');
+    // Ensure start (1,1) and end (cols-2, rows-2) are paths
+    grid[1][1]=0; grid[1][2]=0;
+    grid[rows-2][cols-2]=0; grid[rows-3][cols-2]=0;
+
+    return grid;
+  }
+
+  function findPathPositions(grid, cols, rows) {
+    const positions = [];
+    for (let r=1;r<rows-1;r++)
+      for (let c=1;c<cols-1;c++)
+        if (grid[r][c]===0) positions.push({r,c});
+    return positions;
+  }
+
+  function startMaze(playerCh, enemyPlanet) {
+    if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
+    if (gameAnimId) cancelAnimationFrame(gameAnimId);
+
+    const cols = 19, rows = 13;
+    const cellSize = 38;
+    const cw = cols*cellSize, ch = rows*cellSize;
+    gameCanvas.width = cw; gameCanvas.height = ch;
+    gameCanvas.style.width = cw+'px'; gameCanvas.style.height = ch+'px';
+
+    const grid = generateMaze(cols, rows);
+    const pathPositions = findPathPositions(grid, cols, rows);
+
+    // Player start at (1,1)
+    let px = 1, py = 1;
+
+    // Cup at the far end
+    const cupR = rows-2, cupC = cols-2;
+
+    // Enemies: pick 3 random path positions (not near start or cup)
+    const enemyPositions = [];
+    const forbidden = new Set();
+    forbidden.add('1,1'); forbidden.add('1,2'); forbidden.add('2,1');
+    forbidden.add((rows-2)+','+(cols-2)); forbidden.add((rows-3)+','+(cols-2));
+    const shuffled = pathPositions.sort(()=>Math.random()-0.5);
+    for (const pos of shuffled) {
+      if (enemyPositions.length>=3) break;
+      const key = pos.r+','+pos.c;
+      if (!forbidden.has(key)) {
+        enemyPositions.push({r:pos.r, c:pos.c, dir:Math.floor(Math.random()*4), timer:0});
+        forbidden.add(key);
       }
-      window.startGame = startGame;
+    }
 
-      btnStart.addEventListener('click', startGame);
+    let lives = 3;
+    let keys = {};
+    let lastMove = 0;
+    const MOVE_DELAY = 120; // ms
 
-      // ── Reset ──
-      btnReset.addEventListener('click', clearSelection);
+    gamePlanetLabel.textContent = enemyPlanet.name + "'s Planet";
+    gamePlanetLabel.style.color = enemyPlanet.color;
+    updateHUD();
 
-      // ── Back button ──
-      btnBack.addEventListener('click', () => {
-        showScreen('select');
+    showScreen('game');
+    gameMsg.classList.remove('show');
+    gameCanvas.focus();
+
+    mazeState = { grid, cols, rows, cellSize, px, py, cupR, cupC, enemyPositions,
+                  lives, keys, lastMove, playerCh, enemyPlanet };
+
+    function gameLoop(ts) {
+      if (!mazeState) return;
+      const s = mazeState;
+      if (!s.lastMove) s.lastMove = ts;
+
+      // Move enemies every 400ms
+      const enemyInterval = 400;
+      s.enemyPositions.forEach((ep,i)=>{
+        ep.timer += (ts - s.lastMove);
+        while (ep.timer >= enemyInterval) {
+          ep.timer -= enemyInterval;
+          moveEnemy(ep, s.grid, s.cols, s.rows);
+        }
       });
 
-      // ── Restore previous selection ──
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        selectCharacter(+saved);
+      // Check enemy collision
+      for (const ep of s.enemyPositions) {
+        if (ep.r === s.py && ep.c === s.px) {
+          s.lives--;
+          updateHUD();
+          if (s.lives <= 0) {
+            showMessage('Game Over!', '#ff4d6a');
+            setTimeout(()=>{ mazeState=null; showScreen('map'); buildMap(s.playerCh); }, 1500);
+            gameAnimId=null; return;
+          }
+          // Reset player position
+          s.px=1; s.py=1;
+          showMessage('Ouch! -1 Life', '#ff4d6a');
+          setTimeout(()=>gameMsg.classList.remove('show'), 800);
+        }
       }
-    })();
-  </script>
 
+      // Check cup collection
+      if (s.px === s.cupC && s.py === s.cupR) {
+        conqueredCups.push(s.enemyPlanet.id);
+        localStorage.setItem(CUPS_KEY, JSON.stringify(conqueredCups));
+        showMessage('🏆 Cup Collected!', s.enemyPlanet.color);
+        setTimeout(()=>{
+          mazeState=null; gameAnimId=null;
+          const remaining = characters.filter(c=>c.id!==s.playerCh.id && !conqueredCups.includes(c.id));
+          if (remaining.length===0) {
+            showWinScreen(s.playerCh);
+          } else {
+            showScreen('map'); buildMap(s.playerCh);
+          }
+        }, 1500);
+        return;
+      }
+
+      s.lastMove = ts;
+      drawMaze(s);
+      gameAnimId = requestAnimationFrame(gameLoop);
+    }
+    gameAnimId = requestAnimationFrame(gameLoop);
+  }
+
+  function moveEnemy(ep, grid, cols, rows) {
+    const dirs = [[0,1],[1,0],[0,-1],[-1,0]];
+    const [dr, dc] = dirs[ep.dir];
+    const nr = ep.r+dr, nc = ep.c+dc;
+    if (nr>0 && nr<rows-1 && nc>0 && nc<cols-1 && grid[nr][nc]===0 && Math.random()>0.2) {
+      ep.r=nr; ep.c=nc;
+    } else {
+      ep.dir = Math.floor(Math.random()*4);
+    }
+  }
+
+  function drawMaze(s) {
+    const ctx = gameCanvas.getContext('2d');
+    const cs = s.cellSize;
+    ctx.clearRect(0,0,gameCanvas.width,gameCanvas.height);
+
+    // Draw space background
+    const bgGrad = ctx.createRadialGradient(gameCanvas.width/2,gameCanvas.height/2,0,gameCanvas.width/2,gameCanvas.height/2,gameCanvas.width);
+    bgGrad.addColorStop(0,'#0d0d2b'); bgGrad.addColorStop(1,'#050510');
+    ctx.fillStyle = bgGrad; ctx.fillRect(0,0,gameCanvas.width,gameCanvas.height);
+
+    // Stars
+    ctx.fillStyle='white';
+    for (let i=0;i<80;i++) {
+      const sx=(i*137+53)%gameCanvas.width, sy=(i*251+97)%gameCanvas.height;
+      ctx.globalAlpha=0.3+Math.sin(i+Date.now()/2000)*0.3;
+      ctx.fillRect(sx,sy,1.5,1.5);
+    }
+    ctx.globalAlpha=1;
+
+    // Walls
+    for (let r=0;r<s.rows;r++) {
+      for (let c=0;c<s.cols;c++) {
+        if (s.grid[r][c]===1) {
+          ctx.fillStyle='#1a1a3a';
+          ctx.fillRect(c*cs,r*cs,cs,cs);
+          ctx.strokeStyle='#2a2a4a';
+          ctx.strokeRect(c*cs+0.5,r*cs+0.5,cs-1,cs-1);
+        }
+      }
+    }
+
+    // Cup
+    const cupX = s.cupC*cs+cs/2, cupY = s.cupR*cs+cs/2;
+    const cupColor = s.enemyPlanet.color;
+    // Cup glow
+    const cupGlow = ctx.createRadialGradient(cupX,cupY,5,cupX,cupY,cs);
+    cupGlow.addColorStop(0,cupColor); cupGlow.addColorStop(1,'transparent');
+    ctx.fillStyle=cupGlow; ctx.fillRect(cupX-cs,cupY-cs,cs*2,cs*2);
+    // Cup body
+    ctx.fillStyle=cupColor;
+    ctx.beginPath(); ctx.arc(cupX,cupY-4,10,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(cupX,cupY-4,5,0,Math.PI*2); ctx.fill();
+    // Cup text
+    ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif';
+    ctx.textAlign='center'; ctx.fillText('CUP',cupX,cupY+18);
+
+    // Enemies
+    s.enemyPositions.forEach((ep,i)=>{
+      const ex=ep.c*cs+cs/2, ey=ep.r*cs+cs/2;
+      const enemyGlow=ctx.createRadialGradient(ex,ey,3,ex,ey,14);
+      enemyGlow.addColorStop(0,'#ff4444'); enemyGlow.addColorStop(1,'transparent');
+      ctx.fillStyle=enemyGlow; ctx.fillRect(ex-14,ey-14,28,28);
+      ctx.fillStyle='#ff3333';
+      ctx.beginPath(); ctx.arc(ex,ey,7,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(ex-2,ey-2,2,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex+2,ey-2,2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#000';
+      ctx.beginPath(); ctx.arc(ex-2,ey-1.5,1,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex+2,ey-1.5,1,0,Math.PI*2); ctx.fill();
+    });
+
+    // Player
+    const plX = s.px*cs+cs/2, plY = s.py*cs+cs/2;
+    const plGlow=ctx.createRadialGradient(plX,plY,4,plX,plY,16);
+    plGlow.addColorStop(0,s.playerCh.color); plGlow.addColorStop(1,'transparent');
+    ctx.fillStyle=plGlow; ctx.fillRect(plX-16,plY-16,32,32);
+    ctx.fillStyle=s.playerCh.color;
+    ctx.beginPath(); ctx.arc(plX,plY,8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(plX,plY-1,3,0,Math.PI*2); ctx.fill();
+  }
+
+  function showMessage(text, color) {
+    gameMsg.textContent=text; gameMsg.style.color=color;
+    gameMsg.classList.add('show');
+    setTimeout(()=>gameMsg.classList.remove('show'), 1200);
+  }
+
+  function updateHUD() {
+    if (!mazeState) return;
+    gameLives.textContent = '❤️'.repeat(mazeState.lives);
+    gameCupsLabel.textContent = '🏆 '+conqueredCups.length+'/3 cups';
+  }
+
+  // ═══════════════════════════════════════════
+  //  WIN SCREEN
+  // ═══════════════════════════════════════════
+  function showWinScreen(playerCh) {
+    if (gameAnimId) cancelAnimationFrame(gameAnimId);
+    mazeState=null;
+
+    winCharImg.src = playerCh.src;
+    winText.textContent = playerCh.name + ' has conquered all planets!';
+
+    winCupsDiv.innerHTML='';
+    conqueredCups.forEach(cupId=>{
+      const cupCh = characters.find(c=>c.id===cupId);
+      const cup=document.createElement('div'); cup.className='win-cup';
+      const body=document.createElement('div'); body.className='cup-body';
+      body.style.background=cupCh.color; body.style.setProperty('--cup-glow',cupCh.color+'88');
+      const stem=document.createElement('div'); stem.className='cup-stem';
+      const base=document.createElement('div'); base.className='cup-base';
+      cup.appendChild(body); cup.appendChild(stem); cup.appendChild(base);
+      winCupsDiv.appendChild(cup);
+    });
+
+    showScreen('win');
+  }
+
+  // ═══════════════════════════════════════════
+  //  EVENT HANDLERS
+  // ═══════════════════════════════════════════
+  function startGame() {
+    if (!selectedId) return;
+    const playerCh = characters.find(c=>c.id===selectedId);
+    loadCups();
+    if (buildMap(playerCh)) {
+      showScreen('map');
+    }
+    startMusic();
+  }
+  window.startGame = startGame;
+  btnStart.addEventListener('click', startGame);
+
+  btnReset.addEventListener('click', ()=>{
+    clearSelection();
+    conqueredCups=[]; localStorage.removeItem(CUPS_KEY);
+  });
+
+  btnBack.addEventListener('click', ()=>{
+    if (orbitAnimId) cancelAnimationFrame(orbitAnimId);
+    showScreen('select');
+  });
+
+  btnLeave.addEventListener('click', ()=>{
+    if (gameAnimId) cancelAnimationFrame(gameAnimId);
+    mazeState=null;
+    gameMsg.classList.remove('show');
+    const playerCh = characters.find(c=>c.id===selectedId);
+    showScreen('map'); buildMap(playerCh);
+  });
+
+  btnPlayAgain.addEventListener('click', ()=>{
+    conqueredCups=[]; localStorage.removeItem(CUPS_KEY);
+    clearSelection();
+    showScreen('select');
+  });
+
+  // Keyboard controls
+  document.addEventListener('keydown', (e)=>{
+    if (!mazeState) return;
+    const s = mazeState;
+    const key = e.key.toLowerCase();
+    let dx=0, dy=0;
+    if (key==='arrowup'||key==='w') dy=-1;
+    else if (key==='arrowdown'||key==='s') dy=1;
+    else if (key==='arrowleft'||key==='a') dx=-1;
+    else if (key==='arrowright'||key==='d') dx=1;
+    else return;
+
+    e.preventDefault();
+    const nx=s.px+dx, ny=s.py+dy;
+    if (nx>=0 && nx<s.cols && ny>=0 && ny<s.rows && s.grid[ny][nx]===0) {
+      s.px=nx; s.py=ny;
+    }
+  });
+
+  // Restore previous selection
+  const saved = localStorage.getItem(CHAR_KEY);
+  if (saved) selectCharacter(+saved);
+
+})();
+</script>
 </body>
 </html>
